@@ -1,0 +1,1826 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta description="CrossVis: An exploratory visual analytics tool for multivariate data.">
+
+  <link rel="stylesheet" type="text/css" href="./css/crossvis.css">
+  <link rel="stylesheet" type="text/css" href="./css/tabulator.min.css">
+  <link rel="stylesheet" type="text/css" href="./js/Semantic-UI/semantic.min.css">
+
+  <title>CrossVis</title>
+
+  <style>
+    @font-face {
+      font-family: "KoHo";
+      src: url("./fonts/KoHo/KoHo-Medium.ttf");
+    }
+  </style>
+</head>
+
+<body>
+  <input id="fileInput" type="file" style="display: none;">
+
+  <div class="ui inverted fixed borderless menu">
+    <div class="ui medium header item" style="font-family: 'KoHo', sans-serif; font-size: 1.8rem;">
+      <div class="content">
+        CrossVis
+      </div>
+    </div>
+    <div class="ui dropdown item dataMenuItem">
+      Data
+      <i class="dropdown icon"></i>
+      <div class="menu">
+        <a class="item loadCSVItem" title="Loads data from CSV file">Open CSV File...</a>
+        <a class="item loadJSONItem" title="Loads plot settings and data from CrossVis JSON file">Open CrossVis JSON File...</a>
+        <div class="divider"></div>
+        <a class="item saveCSVItem" title="Saves data to generic Comma Separated Value (CSV) file">Save As CSV File...</a>
+        <a class="item saveJSONItem" title="Saves plot settings and data to CrossVis JSON file">Save As CrossVis JSON File...</a>
+        <div class="divider"></div>
+        <a class="item loadCarsDataItem">Load Sample '83 ASA Cars Dataset</a>
+        <!-- <a class="item loadNYTCovidDataItem">Load NYTimes COVID Dataset</a> -->
+      </div>
+    </div>
+    <div class="ui dropdown item filterMenuItem">
+      Filter
+      <i class="dropdown icon"></i>
+      <div class="menu">
+        <a class="item removeSelectedItem">Remove Selected Data</a>
+        <a class="item keepSelectedItem">Keep Selected Data</a>
+        <a class="item disabled undoLastFilterItem">Undo Last Filter Action</a>
+      </div>
+    </div>
+    <div class="ui dropdown item viewsMenuItem">
+      Views
+      <i class="dropdown icon"></i>
+      <div class="menu">
+        <a class="item scatterplotItem">Scatterplot...</a>
+        <a class="item mapViewItem">Map...</a>
+        <a class="item histogramViewItem">Histogram...</a>
+      </div>
+    </div>
+    <a class="ui item dimensionsItem">
+      Dimensions...
+    </a>
+    <a class="ui item settingsItem">
+      Plot Settings...
+    </a>
+    <a class="ui item redrawItem">
+      Redraw
+    </a>
+    <!-- <div class="right menu">
+      <div class="ui item">
+        <img class="ui image" src="./img/regions-logo-color.png" height="34px">
+      </div>
+    </div> -->
+  </div>
+
+  <div style="padding: 84px 15px 0px;">
+    <div class="ui raised secondary segment">
+      <div class="ui stackable grid">
+        <div class="six wide column">
+          <div class="ui fluid labeled input">
+            <div class="ui label">Query Dimension</div>
+            <select class="ui fluid selection dropdown" id="queryDimensionDropdown">
+              <option value="">Choose Query Dimension</option>
+            </select>
+          </div>
+        </div>
+        <div class="ten wide column">
+          <div class="ui tab" data-tab="categorical-query-tab">
+            <div class="ui fluid search selection multiple dropdown categoricalQueryDropdown">
+              <input type="hidden" name="query-categories">
+              <i class="dropdown icon"></i>
+              <div class="default text">Select Categories</div>
+              <div class="menu">
+              </div>
+            </div>
+          </div>
+          <div class="ui tab" data-tab="numerical-query-tab">
+            <div class="ui stackable three column grid">
+              <div class="column">
+                <div class="ui fluid labeled input">
+                  <div class="ui label">Minimum</div>
+                  <input type="number" id="queryMinNumericalValue" step=".1" placeholder="Minimum Query Value">
+                </div>
+              </div>
+              <div class="column">
+                <div class="ui fluid labeled input">
+                  <div class="ui label">Maximum</div>
+                  <input type="number" id="queryMaxNumericalValue" step="".1" placeholder="Maximum Query Value">
+                </div>    
+              </div>
+              <div class="column">
+                <div class="ui fluid labeled input">
+                  <div class="ui label">Quartile</div>
+                  <select class="ui fluid selection dropdown quartileQueryDropdown">
+                    <option value="">Select Quartile</option>
+                    <option value="upper">Upper 25%</option>
+                    <option value="middle">Middle 50%</option>
+                    <option value="lower">Lower 25%</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ui tab" data-tab="temporal-query-tab">
+            <h4>Temporal Tab</h4>
+            <div class="ui input">
+              <input type="text" id="queryMinTemporalValue" placeholder="Minimum Value">
+            </div>
+            <div class="ui input">
+              <input type="text" id="queryMaxTemporalValue" placeholder="Maximum Value">
+            </div>
+          </div>
+        </div>
+        <!-- <div class="row">
+          <div class="four wide column">
+            <select class="ui fluid selection dropdown" id="searchDimensionSelect">
+              <option value="">Choose Search Dimension</option>
+            </select>
+          </div>
+          <div class="twelve wide column">
+            <div class="ui icon fluid input">
+              <input type="text" class="textSearchInput" placeholder="Comma Separated List of Terms to Highlight">
+              <i class="search icon"></i>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="four wide column">
+            <select class="ui fluid selection dropdown" id="numericalSearchDimensionSelect">
+              <option value="">Choose Search Dimension</option>
+            </select>
+          </div>
+          <div class="six wide column">
+            <div class="ui icon fluid input">
+              <input type="number" class="" placeholder="Comma Separated List of Terms to Highlight">
+              <i class="search icon"></i>
+            </div>
+          </div>
+        </div> -->
+      </div>
+    </div>
+
+    <div class="ui segment attached top chartSegment">
+      <div class="ui grid">
+        <div class="six wide column">
+          <h3 class="ui header">Parallel Coordinates Plot</h3>
+        </div>
+        <div class="ten wide column right aligned">
+          <div class="ui blue label">
+            Lines Selected
+            <div class="detail" id="selectedLinesStat">0 / 0 (0%)</div>
+          </div>
+        </div>
+      </div>      
+      <div id="chart" style="position: relative; overflow-x: auto; overflow-y: hidden;"></div>
+    </div>
+
+    <div class="ui attached bottom segment">
+      <!-- <div class="ui top attached tabular menu tabMenu">
+        <a class="item active" data-tab="data">Data Table</a>
+        <a class="item" data-tab="dimensions">Dimension Settings</a>
+      </div>
+      <div class="ui bottom attached tab segment active" data-tab="data">
+        <div id="table_container"></div>
+      </div>
+      <div class="ui bottom attached tab segment" data-tab="dimensions">
+        <h4 class="ui header">Dimension Settings</h4>
+      </div> -->
+
+
+      <!-- <h3 class="ui header">Data Table</h3> --> 
+      <div class="ui fluid grid">
+        <div class="twelve wide column left aligned">
+          <h3 class="ui header">Data Table</h3>
+        </div>
+        <div class="four wide column right aligned">
+          <div class="ui checked checkbox showDataTable">
+            <input type="checkbox" checked="">
+            <label>Show Data Table</label>
+          </div>
+        </div>
+      </div>
+      <div class="ui divider hidden"></div>
+      <div id="table_container"></div>
+    </div>
+  </div>
+
+  <div class="ui divider"></div>
+  <div class="ui basic center aligned footer segment">
+    <span id="mavenVersionNumberText"></span><br/>
+  </div>
+  
+  <div class="ui modal columnTypeModal">
+    <i class="close icon"></i>
+    <div class="header">
+      Review CSV Column Loading Parameters
+    </div>
+    <div class="scrolling content">
+      <div class="description">
+        <h4 class="ui header">Instructions</h4>
+        <p>Review the column data types below. Change the data types if necessary. Use the Load parameter to either load or ignore column values. The first ten lines of the CSV are shown below to assist.</p>
+      </div>
+      <div class="ui divider"></div>
+        <div class="ui checkbox showAllColumnsCheckbox" data-content="If not checked, the first 20 columns are initially shown. If checked, all columns are shown. Hidden columns can be shown after loading using the Dimensions menu item. Showing a large number of columns may decrease performance." data-variation="very wide">
+          <input type="checkbox" id="showAllColumnsCheckbox">
+          <label for="showAllColumnsCheckbox">Show All Columns After Loading</label>
+        </div>
+        <h4 class="ui header">Column Parameters</h4>
+        <div id="datatypeTable"></div>
+        <h4 class="ui header">First 10 Lines of File</h4>
+        <div id="fileHeadTable"></div>
+    </div>
+    <div class="actions">
+      <div class="ui deny black right labeled icon button">
+        <i class="close icon"></i>
+        Cancel
+      </div>
+      <div class="ui positive right labeled icon button">
+        <i class="checkmark icon"></i>
+        Apply
+      </div>
+    </div>
+  </div>
+
+  <div class="ui tiny modal dimensionsModal">
+    <i class="close icon"></i>
+    <div class="header">
+      Select Visible Dimensions
+    </div>
+    <div class="content">
+      <div class="description">
+        <div class="ui header">Instructions</div>
+        <p>Click the dimension names to add or click the close button to remove from the plot. Typing will filter the dimension list. Click the Apply button to redraw the plot or Cancel to abort.</p>
+      </div>
+      <div class="ui divider"></div>
+      <form class="ui form">
+        <div class="field">
+          <label>Visible Dimensions</label>
+          <select class="ui fluid search dropdown dimensionSelect" multiple id="dimensionSelect">
+            <option value="">Choose Visible Dimensions</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui deny black right labeled icon button">
+        <i class="close icon"></i>
+        Cancel
+      </div>
+      <div class="ui positive right labeled icon button">
+        <i class="checkmark icon"></i>
+        Apply
+      </div>
+    </div>
+  </div>
+
+  <div class="ui tiny modal settingsModal">
+    <i class="close icon"></i>
+    <div class="header">
+      Plot Settings
+    </div>
+    <div class="content">
+      <form class="ui form plotSettingsForm">
+        <h4 class="ui dividing header">Display Settings</h4>
+        <div class="two fields">
+          <div class="inline field">
+            <div class="ui checkbox showAxisStatistics">
+              <input type="checkbox" checked>
+              <label>Show Axis Statistics</label>
+            </div>
+          </div>
+          <div class="inline field">
+            <div class="ui checkbox showHistograms">
+              <input type="checkbox">
+              <label>Show Histograms</label>
+            </div>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="inline field">
+            <div class="ui checked checkbox showAxisTicks">
+              <input type="checkbox">
+              <label>Show Axis Ticks</label> 
+            </div>
+          </div>
+          <div class="inline field">
+            <div class="ui checked checkbox showAxisLabels">
+              <input type="checkbox" checked="">
+              <label>Show Axis Labels</label>
+            </div>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="inline field">
+            <div class="ui checked checkbox useProportionalCategoryRects">
+              <input type="checkbox">
+              <label>Proportional Categorical Rectangles</label> 
+            </div>
+          </div>
+          <div class="inline field">
+            <div class="ui checked checkbox openViewTabs">
+              <input type="checkbox" checked="">
+              <label>Open Views in Tabs</label>
+            </div>
+          </div>
+        </div>
+        <h4 class="ui dividing header">Polyline Settings</h4>
+        <div class="two fields">
+          <div class="inline field">
+            <div class="ui checked checkbox showSelectedLines">
+              <input type="checkbox" checked="">
+              <label>Show Selected</label>
+            </div>
+          </div>
+          <div class="inline field">
+            <div class="ui checked checkbox showUnselectedLines">
+              <input type="checkbox" checked="">
+              <label>Show Unselected</label>
+            </div>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="field">
+            <label>Selected Opacity</label>
+            <input type="range" class="ui fluid range" id="selectedLineOpacityRange" min="5" max="100" value="60" style="width: 100%;">
+          </div>
+          <div class="field">
+            <label>Unselected Opacity</label>
+            <input type="range" class="ui fluid range" id="unselectedLineOpacityRange" min="5" max="100" value="25" style="width: 100%;">
+          </div>
+        </div>
+        <h4 class="ui dividing header">Chart Size Settings</h4>
+        <div class="field">
+          <label>Chart Height</label>
+          <input type="range" class="ui fluid range" id="chartHeightRange" min="200" max="1000" value="500" style="width: 100%;">
+        </div>
+        <div class="two fields">
+          <div class="field">
+            <label>Chart Width</label>
+            <div class="field">
+              <select class="ui dropdown chartWidthFit">
+                <option value="D" selected>Fit to Data</option>
+                <option value="W">Fit to Window</option>
+                <option value="M">Manually Set Axis Spacing</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Spacing Between Axes</label>
+            <input type="range" class="ui fluid range" id="axisSpacingRange" min="60" max="500" value="100" style="width: 100%;" disabled>
+          </div>
+        </div>
+        <h4 class="ui dividing header">Data Table Settings</h4>
+        <!-- <div class="two fields"> -->
+          <!-- <div class="field">
+            <div class="ui checked checkbox showDataTable">
+              <input type="checkbox" checked="">
+              <label>Show Data Table</label>
+            </div>
+          </div> -->
+          <div class="field">
+            <label>Table Page Size</label>
+            <input type="range" class="ui fluid range" id="tablePageSizeSlider" min="20" max="400" value="50" style="width: 100%;">
+          </div>
+        <!-- </div>  -->
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui positive left labeled icon button">
+        <i class="close icon"></i>
+        Close
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="js/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="js/Semantic-UI/semantic.min.js"></script>
+  <script type="text/javascript" src="js/d3.min.js"></script>
+  <script type="text/javascript" src="js/d3-array.min.js"></script>
+  <script type="text/javascript" src="js/pcpChart.js"></script>
+  <script type="text/javascript" src="js/tabulator.min.js"></script>
+  <script type="text/javascript" src="js/simple-statistics.min.js"></script>
+  <script type="text/javascript" src="js/scatterplotChart.js"></script>
+
+  <script>
+    const tupleIDProperty = '_id_';
+    const goldenRatio = 1.61803398875;
+    const pcpChartMargin = {top: 10, right: 30, bottom: 20, left: 30};
+    const splotMargin = {top: 30, right: 10, bottom: 30, left: 60};
+    const maxSplotSize = 600;
+    var reader;
+    var chart;
+    var spChart;
+    var table;
+    var fileData;
+    var chartData;
+    var csvData;
+    var previousSearchDim;
+    var chartTuplesHistory = [];
+    const maxTupleHistory = 5;
+    const numberFormat = d3.format(",");
+    const percentFormat = d3.format(".0%");
+    var ignoreSPlotAxisDropdowns = false;
+    var loadingJSONFile = false;
+    var visibleTab = "splot_tab";
+    const broadcastChannel = new BroadcastChannel("maven_channel");
+    const channelListeners = new Set();
+    const maven_app_mvid = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
+    console.log(`maven_app_mvid: ${maven_app_mvid}`);
+    var datatypeTable;
+    var ignoreQueryChange = false;
+
+    // handles sending message to other views (scatterplots, histograms)
+    const sendMessage = (msg) => {
+      msg.src = maven_app_mvid;
+      broadcastChannel.postMessage(msg);
+    };
+
+    // handles messages received from other views (scatterplots, histograms)
+    const receiveMessage = (event) => {
+      // ignore untrusted events
+      if (!event.isTrusted) return;
+      // ignore events not from maven main app, or without dst/src
+      if (!event.data.src || !event.data.dst || event.data.dst !== maven_app_mvid) return;
+
+      if (event.data.type === "hello") {
+        channelListeners.add(event.data.src);
+        sendMessage({
+          type: "hello", 
+          dst: event.data.src
+        });
+      } else if (event.data.type === "send data") {
+        sendChartDataAsMessage(event.data.src, true);
+        /*
+        if (channelListeners.has(event.data.src)) {
+          if (chartData) {
+            var msg = {
+              type: "set data",
+              dimensions: chartData.dimensions,
+              tuples: chartData.tuples,
+              display_options: getDisplayOptionsData()
+            };
+            if (chart && chart.selectedTuples().length !== chartData.tuples.length) {
+              // set selected tuple ids
+              msg.selected = chart.selectedTuples().map(d => d['_id_']);
+            }
+            msg.dst = event.data.src;
+            sendMessage(msg);
+          }
+        }
+        */
+      }
+    };
+
+    const sendChartDataAsMessage = (dst = null, sendDisplayOptions = false) => {
+      if (channelListeners.size > 0 && chartData) {
+        var msg = {
+          type: "set data",
+          dimensions: chartData.dimensions,
+          tuples: chartData.tuples
+        };
+        if (chart && chart.selectedTuples().length !== chartData.tuples.length) {
+          msg.selected = chart.selectedTuples().map(d => d[tupleIDProperty]);
+        }
+        if (dst !== null) {
+          msg.dst = dst;
+        }
+        if (sendDisplayOptions) {
+          msg.display_options = getDisplayOptionsData();
+        }
+        sendMessage(msg);
+      }
+    };
+
+    const getDisplayOptionsData = () => {
+      return {
+        selectedColor: chart ? chart.selectedLineColor() : "steelblue",
+        unselectedColor: chart ? chart.unselectedLineColor() : "#CCC",
+        selectedOpacity: getSelectedLineOpacity(),
+        unselectedOpacity: getUnselectedLineOpacity(),
+        showSelected: getShowSelectedLines(),
+        showUnselected: getShowUnselectedLines()
+      }
+    };
+
+    const setupBroadcastChannel = () => {
+      broadcastChannel.addEventListener("message", receiveMessage);
+    };
+
+    const handlePCPChartSelection = (selectedDimension) => {
+      if (chart && !ignoreQueryChange) {
+        table ? table.setData(chart.selectedTuples()) : null;
+        updateStatisticLabels();
+
+        // consider making this a promise
+        if (channelListeners.size > 0) {
+          sendMessage({
+            type: "set selected data", 
+            selected: chart.selectedTuples().map(d => d[tupleIDProperty])
+          });
+        }
+
+        // if selected dimension is the same dimension selected in the query dropdown
+        // update the query selection fields
+        const queryDropdownDimension = $('#queryDimensionDropdown').dropdown('get text');
+        const queryDimensionSelection = selectedDimension.find(d => d.dimension.name === queryDropdownDimension);
+
+        if (queryDimensionSelection) {
+          ignoreQueryChange = true;
+          if (queryDimensionSelection.dimension.type === 'categorical') {
+            const selectedCategoryIDs = [...queryDimensionSelection.dimension.selectedCategories].map(d => `${d}`);
+            $('.categoricalQueryDropdown').dropdown('set exactly', selectedCategoryIDs);
+          } else if (queryDimensionSelection.dimension.type === 'numerical') {
+            if (queryDimensionSelection.extent && queryDimensionSelection.extent.length > 0) {
+              $('#queryMinNumericalValue').val(d3.min(queryDimensionSelection.extent));
+              $('#queryMaxNumericalValue').val(d3.max(queryDimensionSelection.extent));
+            } else {
+              $('#queryMinNumericalValue').val(null);
+              $('#queryMaxNumericalValue').val(null);
+            }
+          }
+          ignoreQueryChange = false;
+        } else {
+          // the query dropdown dimension has no query selection in PCP so clear it
+          queryDropdownDimensionType = chartData.dimensions.find(d => d.name === queryDropdownDimension).type;
+          ignoreQueryChange = true;
+          if (queryDropdownDimensionType === 'categorical') {
+            $('.categoricalQueryDropdown').dropdown('clear');
+          } else if (queryDropdownDimensionType === 'numerical') {
+            $('#queryMinNumericalValue').val(null);
+            $('#queryMaxNumericalValue').val(null);
+          }
+          ignoreQueryChange = false;
+        }
+      }
+    };
+   
+    const createChart = () => {
+      d3.select("#chart").selectAll("*").remove();
+
+      if (chartData) {        
+        const chartWidth = document.getElementById('chart').clientWidth;
+        const chartHeight = getChartHeight();
+        document.getElementById('chart').style.height = `${chartHeight}px`;
+
+        chart = pcpChart()
+          .width(chartWidth)
+          .height(chartHeight)
+          .categoryHeightMode(getUseProportionalCategoryRects() ? "proportional" : "equal")
+          .showSummaryStatistics(getShowAxisStatistics())
+          .axisSpacing(getAxisSpacing())
+          .showUnselectedLines(getShowUnselectedLines())
+          .showSelectedLines(getShowSelectedLines())
+          .unselectedLineOpacity(getUnselectedLineOpacity())
+          .selectedLineOpacity(getSelectedLineOpacity())
+          .showAxisTicks(getShowAxisTicks())
+          .showAxisTickLabels(getShowAxisLabels())
+          .setShowHistograms(getShowHistograms())
+          .selectionChangeHandler(handlePCPChartSelection)
+          .margin(pcpChartMargin);
+        d3.select('#chart').call(chart, chartData);
+        clearQueryInputs();
+      }
+    };
+
+    function updateStatisticLabels() {
+      if (chart) {
+        $('#selectedLinesStat')
+          .text(`${numberFormat(chart.selectedTuples().length)} / ${numberFormat(chartData.tuples.length)} (${percentFormat(chart.selectedTuples().length / chartData.tuples.length)})`);
+      } else {
+        $('#selectedLinesStat')
+          .text('0 / 0 (0%)');
+      }
+    };
+
+    // resize the chart
+    const resizeChart = () => {
+      if (chart) {
+        const chartWidth = document.getElementById('chart').clientWidth;
+        const chartHeight = getChartHeight();
+        document.getElementById('chart').style.height = `${chartHeight}px`;
+        chart.size([chartWidth, chartHeight]);
+      }
+    };
+
+    // create the table
+    const createTable = () => {
+      d3.select("#table").remove();
+
+      if (chartData && getShowDataTable()) {
+        const tableDiv = document.createElement("div");
+        tableDiv.id = "table";
+        document.getElementById("table_container").appendChild(tableDiv);
+
+        table = new Tabulator("#table", {
+            data: chart ? chart.selectedTuples() : chartData.tuples,
+            pagination: "local",
+            paginationSize: getDataTablePageSize(),
+            autoColumns: true,
+            layout:"fitDataFill",
+            height: 500
+          });
+      }
+    };
+    
+    // const guessColumnDataType = (data, columnName) => {
+    //   var guessedType = "numerical";
+    //   var madeGuess = false;
+    //   for (const datum of data) {
+    //     if (datum[columnName] && datum[columnName] !== null) {
+    //       if (datum[columnName] instanceof Date) {
+    //         guessedType = "temporal";
+    //         madeGuess = true;
+    //         break;
+    //       } else if (typeof(datum[columnName]) === "string") {
+    //         if (datum[columnName].trim().length > 0) {
+    //           guessedType = "categorical";
+    //           madeGuess = true;
+    //           break;
+    //         }
+    //       } else {
+    //         guessedType = "numerical";
+    //         madeGuess = true;
+    //         break;
+    //       }
+    //     }
+    //   }
+    //   if (!madeGuess) {
+    //     console.log(`Didn't make a guess for ${columnName}: ${guessedType}`);
+    //   }
+    //   return guessedType;
+    // };
+
+    // load JSON File
+    const loadJSONFile = (file) => {
+      if (file) {
+        reader = new FileReader();
+        reader.addEventListener('load', parseJSONFile, false);
+        reader.readAsText(file);
+      }
+    };
+
+    // parse JSON File
+    const parseJSONFile = () => {
+      const jsonData = JSON.parse(reader.result);
+
+      // apply chart settings
+      $('.chartWidthFit').dropdown('set selected', jsonData.settings.chartWidthFit);
+      if (jsonData.settings.chartWidthFit === 'M') {
+        document.getElementById('axisSpacingRange').disabled = false;
+        document.getElementById('axisSpacingRange').value = jsonData.settings.axisSpacing;
+      }
+      jsonData.settings.showAxisStatistics ? $('.showAxisStatistics').checkbox('set checked') : $('.showAxisStatistics').checkbox('set unchecked');
+      jsonData.settings.showHistograms ? $('.showHistograms').checkbox('set checked') : $('.showHistograms').checkbox('set unchecked');
+      jsonData.settings.showAxisTicks ? $('.showAxisTicks').checkbox('set checked') : $('.showAxisTicks').checkbox('set unchecked');
+      jsonData.settings.openViewTabs ? $('.openViewTabs').checkbox('set checked') : $('.openViewTabs').checkbox('set unchecked');
+      jsonData.settings.showAxisLabels ? $('.showAxisLabels').checkbox('set checked') : $('.showAxisLabels').checkbox('set unchecked');
+      jsonData.settings.showSelectedLines ? $('.showSelectedLines').checkbox('set checked') : $('.showSelectedLines').checkbox('set unchecked');
+      jsonData.settings.showUnselectedLines ? $('.showUnselectedLines').checkbox('set checked') : $('.showUnselectedLines').checkbox('set unchecked');
+      jsonData.settings.showDataTable ? $('.showDataTable').checkbox('set checked') : $('.showDataTable').checkbox('set unchecked');
+      jsonData.settings.categoryHeightMode === "proportional" ?  $('.useProportionalCategoryRects').checkbox('set checked') : $('.useProportionalCategoryRects').checkbox('set unchecked');
+      
+      document.getElementById('selectedLineOpacityRange').value = jsonData.settings.selectedLineOpacity * 100.;
+      document.getElementById('unselectedLineOpacityRange').value = jsonData.settings.unselectedLineOpacity * 100;      
+      document.getElementById('chartHeightRange').value = +jsonData.settings.chartHeight;
+      document.getElementById('tablePageSizeSlider').value = +jsonData.settings.tablePageSize;
+
+      fileData = {
+        dimensions: jsonData.dimensions.slice(),
+        tuples: jsonData.tuples.slice()
+      };
+
+      const temporalDimensions = fileData.dimensions.filter(d => d.type === "temporal").map(d => d.name);
+      if (temporalDimensions.length > 0) {
+        fileData.tuples.forEach(t => {
+          temporalDimensions.forEach(dim => {
+            t[dim] = new Date(t[dim]);
+          });
+        });
+      }
+
+      loadNewFileData(true);
+    };
+
+    // load CSV File
+    const loadCSVFile = (file) => {
+      if (file) {
+        reader = new FileReader();
+        reader.addEventListener('load', parseCSVFile, false);
+        reader.readAsText(file);
+      }
+    };
+
+    // looks at column values / name to predict the column types
+    const predictColumnTypes = (data, columnNames) => {
+      // data[0][columnNames[0]] = "NaN";
+      const columnTypes = columnNames.map(c => {
+        if (c.includes("CBSACode") || c.includes("CountyFIPS")) {
+          // TODO: Remove this special case for fips codes after use can edit the dimension type
+          return "categorical";
+        } else {
+          const valueTypes = new Set(data.map(d => guessValueType(d[c])));
+          if (valueTypes.size === 1) {
+            return [...valueTypes][0];
+          } else if (valueTypes.has("categorical")) {
+            return "categorical";
+          } else if (valueTypes.has("numerical")) {
+            return "numerical";
+          } else {
+            return "temporal";
+          }
+        }
+      });
+      return columnTypes;
+    };
+
+    const guessValueType = (value) => {
+      if (!value) {
+        return null;
+      } else if (value === "NaN") {
+        return "numerical";
+      } else if (!isNaN(+value)) {
+        return "numerical";
+      } else if (value.match(/^([-+]\d{2})?\d{4}(-\d{2}(-\d{2})?)?(T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[-+]\d{2}:\d{2})?)?$/)) { 
+        return "temporal";
+      } else {
+        return "categorical";
+      }
+    };
+
+    // parse CSV File and use modal to confirm data types
+    const parseCSVFile = () => {
+      csvData = d3.csvParse(reader.result);
+      const predicatedTypes = predictColumnTypes(csvData.slice(0, 10), csvData.columns);
+      csvData.columnTypes = csvData.columns.map((d,i) => ({idx: i, name: d, type: predicatedTypes[i], read: false}));
+
+      if (csvData.columns.length < 35) {
+        $('.ui.checkbox.showAllColumnsCheckbox').checkbox('check');
+      } else {
+        $('.ui.checkbox.showAllColumnsCheckbox').checkbox('uncheck');
+      }
+      $('.ui.modal.columnTypeModal').modal('show');
+    };
+
+    const loadCSVDataPromise = () => {
+      return new Promise(function(resolve, reject) {
+        loadCSVData();
+        resolve();
+      });
+    };
+
+    // final parsing of column data after column types validated ignoring columns as specified by user
+    const loadCSVData = () => {
+      // create dimension object array
+      let dims = [];
+      csvData.columnTypes.forEach(c => {
+        if (c.read) {
+          dims.push({
+            name: c.name,
+            type: c.type
+          });
+        }
+      });
+
+      // create tuple array converting each element to appropriate data type
+      const tuples = csvData.map(d => {
+        let tuple = {};
+        Object.keys(d).forEach((key, i) => {
+          if (csvData.columnTypes[i].read) {
+            var value = d[key].trim();
+            if (csvData.columnTypes[i].type === "numerical") {
+              if (value === "NaN" || value === "" || value.toLowerCase() === "null") {
+                tuple[key] = null;
+              } else {
+                tuple[key] = +value;
+              }
+            } else if (csvData.columnTypes[i].type === "temporal") {
+              tuple[key] = new Date(value);
+            } else {
+              tuple[key] = value;
+            } 
+          }
+        });
+        return tuple;
+      });
+
+      // initialize fileData object
+      fileData = {dimensions: dims, tuples};
+      
+      csvData = null;
+
+      const showAllColumns = $('.ui.checkbox.showAllColumnsCheckbox').checkbox('is checked');
+      loadNewFileData(showAllColumns);
+    };
+
+    // Called when new file data has been loaded
+    // Adds id file to file data and initializes all charts/ui components
+    const loadNewFileData = (showAllDimensions) => {
+      // create an id property for each tuple
+      fileData.tuples.forEach((t,idx) => t[tupleIDProperty] = idx);
+
+      chartData = {
+        // dimensions: fileData.dimensions.length > 20 ? fileData.dimensions.slice(0, 20) : fileData.dimensions
+        dimensions: fileData.dimensions.length > 20 ? !showAllDimensions ? fileData.dimensions.slice(0,20) : fileData.dimensions : fileData.dimensions
+      };
+
+      chartData.tuples = fileData.tuples.map((tuple, i) => {
+        let datum = {};
+        chartData.dimensions.forEach(d => {
+          datum[d.name] = tuple[d.name];
+        });
+        datum[tupleIDProperty] = tuple[tupleIDProperty];
+        // datum['_id_'] = i;
+        return datum;
+      });
+
+      chart = null;
+      createChart();
+      sendChartDataAsMessage();
+      populateQueryDimensionDropdown();
+      updateStatisticLabels();
+      createTable();
+      $('.undoLastFilterItem').addClass('disabled');
+      chartTuplesHistory = [];
+    };
+
+    const sortChartDimensions = (orderedDimNames) => {
+      orderedDimNames.reverse().forEach(d => moveChartDimensionToFront(d));
+    };
+
+    const moveChartDimensionToFront = (dimName) => {
+      if (chartData) {
+        const idx = chartData.dimensions.findIndex(d => d.name === dimName);
+        if (idx !== -1) {
+          chartData.dimensions.unshift(chartData.dimensions.splice(idx, 1)[0]);
+        }
+      }
+    };
+
+    // load the cars sample dataset
+    const loadNYTCOVIDData = () => {
+      d3.csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv', d3.autoType)
+        .then(data => {
+          console.log(data);
+          fileData = {
+            dimensions: [
+              {name: "state", type: "categorical"},
+              {name: "date", type: "temporal"},
+              {name: "fips", type: "categorical"},
+              {name: "cases", type: "numerical"},
+              {name: "deaths", type: "numerical"}
+            ],
+            tuples: data.slice()
+          }
+          console.log(fileData);
+          loadNewFileData(true);
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    };
+
+    // load the cars sample dataset
+    const loadCarsData = () => {
+      d3.csv("data/cars_full.csv")
+        .then(data => {
+          fileData = {
+            dimensions: [
+              {name: 'Name', type: 'categorical'},
+              {name: 'Origin', type: 'categorical'},
+              {name: 'Cylinders', type: 'categorical'},
+              {name: 'MPG', type: 'numerical'},
+              {name: 'Horsepower', type: 'numerical'},
+              {name: 'Weight', type: 'numerical'},
+              {name: 'Displacement', type: 'numerical'},
+              {name: 'Acceleration', type: 'numerical', inverted: true},
+              {name: 'Year', type: 'temporal'}
+            ],
+            tuples: data.map(d => {
+              return {
+                Name: d.Name,
+                Origin: d.Origin,
+                Cylinders: +d.Cylinders,
+                MPG: +d.MPG,
+                Horsepower: +d.Horsepower,
+                Weight: +d.Weight,
+                Displacement: +d.Displacement,
+                Acceleration: +d.Acceleration,
+                Year: new Date(d.Year)
+              }
+            })
+          };
+          loadNewFileData(true);
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    };
+
+    // populate query dimension dropdown values
+    const populateQueryDimensionDropdown = () => {
+      const values = chartData.dimensions.filter(d => d.type !== 'temporal').map((d,i) => {
+        return {
+          name: d.name,
+          value: d.name,
+          selected: i === 0 ? true : false
+        };
+      });
+      $('#queryDimensionDropdown').dropdown('change values', values);
+    };
+
+    // populate dimensionSelect field
+    const populateDimensionSelect = () => {
+      const select = document.getElementById("dimensionSelect");
+      clearSelectOptions(select);
+
+      if (fileData && chartData) {
+        const selectedDimensions = chartData.dimensions.map(d => d.name);
+        let options = [...new Set(fileData.dimensions.map(d => d.name))];
+        options.sort(d3.ascending);
+        options.map(d => {
+          const opt = new Option(d, d, false, selectedDimensions.includes(d));
+          select.options[select.options.length] = opt;
+        });
+      }
+    };
+
+    // clear all options in a select input
+    const clearSelectOptions = (select) => {
+      for (var i = select.options.length - 1; i >= 0; i--) {
+        select.remove(i);
+      }
+    };
+
+    // get the selected text search dimension
+    const getQueryDimension = () => {
+      return $('#queryDimensionDropdown').dropdown('get text');
+    };
+
+    // get data table pagination size setting
+    const getDataTablePageSize = () => {
+      return document.getElementById('tablePageSizeSlider').value;
+    };
+
+    // get selectedLineOpacity setting
+    const getSelectedLineOpacity = () => {
+      return document.getElementById('selectedLineOpacityRange').value / 100.;
+    };
+
+    // get unselectedLineOpacity setting
+    const getUnselectedLineOpacity = () => {
+      return document.getElementById('unselectedLineOpacityRange').value / 100.;
+    };
+
+    // get chartHeight setting
+    const getChartHeight = () => {
+      return document.getElementById('chartHeightRange').value;
+    };
+
+    // get axisSpacing setting
+    const getAxisSpacing = () => {
+      const chartFitMode = getChartWidthFit();
+      if (chartFitMode === 'D') {
+        const chartHeight = getChartHeight();
+        const chartWidth = document.getElementById('chart').clientWidth;
+        const windowFitSpacing = (chartWidth - pcpChartMargin.left - pcpChartMargin.right) / chartData.dimensions.length;
+        const goldenSpacing = (chartHeight - pcpChartMargin.top - pcpChartMargin.bottom) / (goldenRatio * 2);
+        if (windowFitSpacing < goldenSpacing) {
+          return goldenSpacing;
+        } else {
+          return windowFitSpacing;
+        }
+      } else if (chartFitMode === 'W') {
+        return NaN;
+      } else {
+        return document.getElementById('axisSpacingRange').value;
+      }
+    };
+
+    // get showAxisTicks setting
+    const getShowAxisTicks = () => {
+      return $('.showAxisTicks').checkbox('is checked');
+    };
+
+    // get showHistograms setting
+    const getShowAxisStatistics = () => {
+      return $('.showAxisStatistics').checkbox('is checked');
+    };
+
+    const getShowDataTable = () => {
+      return $('.showDataTable').checkbox('is checked');
+    }
+
+    // get showHistograms setting
+    const getShowHistograms = () => {
+      return $('.showHistograms').checkbox('is checked');
+    };
+
+    // get useProportionalCategoryRects setting
+    const getUseProportionalCategoryRects = () => {
+      return $('.useProportionalCategoryRects').checkbox('is checked');
+    };
+
+    // get showAxisLabels setting
+    const getShowAxisLabels = () => {
+      return $('.showAxisLabels').checkbox('is checked');
+    };
+
+    // get openViewTabs setting
+    const getOpenViewsInTabs = () => {
+      return $('.openViewTabs').checkbox('is checked');
+    };
+
+    // get showSelectedLines setting
+    const getShowSelectedLines = () => {
+      return $('.showSelectedLines').checkbox('is checked');
+    };
+
+    // get showUnselectedLines setting
+    const getShowUnselectedLines = () => {
+      return $('.showUnselectedLines').checkbox('is checked');
+    };
+
+    // get chart width fit setting
+    const getChartWidthFit = () => {
+      return $('.chartWidthFit').dropdown('get value');
+    }
+
+    // handle changes to tablePageSizeSlider option
+    document.getElementById('tablePageSizeSlider').addEventListener('change', () => {
+      createTable();
+    });
+
+    // handle changes to selectedLineOpacity option
+    document.getElementById('selectedLineOpacityRange').addEventListener('change', () => {
+      if (chart) {
+        chart.selectedLineOpacity(getSelectedLineOpacity());
+      }
+      if (channelListeners.size > 0) {
+        sendMessage({
+          type: "set display options",
+          display_options: {
+            selectedOpacity: getSelectedLineOpacity()
+          }
+        });
+      }
+    });
+    
+    // handle changes to unselectedLineOpacity option
+    document.getElementById('unselectedLineOpacityRange').addEventListener('change', () => {
+      // chart ? chart.unselectedLineOpacity(getUnselectedLineOpacity()) : null;
+      if (chart) {
+        chart.unselectedLineOpacity(getUnselectedLineOpacity())
+      }
+      if (channelListeners.size > 0) {
+        sendMessage({
+          type: "set display options",
+          display_options: {
+            unselectedOpacity: getUnselectedLineOpacity()
+          }
+        });
+      }
+    });
+
+    // handle changes to chartHeight option
+    document.getElementById('chartHeightRange').addEventListener('change', () => {
+      resizeChart();
+    });
+
+    // handle changes to axisSpacing option
+    document.getElementById('axisSpacingRange').addEventListener('change', () => {
+      chart.axisSpacing(getAxisSpacing());
+    });
+    
+    $('.chartWidthFit.ui.dropdown')
+      .dropdown({
+        onChange: function(value, text, $selectedItem) {
+          if (value === "D") {
+            document.getElementById('axisSpacingRange').disabled = true;
+          } else if (value === "W") {
+            document.getElementById('axisSpacingRange').disabled = true;
+          } else {
+            document.getElementById('axisSpacingRange').disabled = false;
+          }
+          if (chart) {
+            chart.axisSpacing(getAxisSpacing());
+          }
+        }
+      });
+
+    // handle change to showSelectedLines option
+    $('.ui.checkbox.showSelectedLines')
+      .checkbox({
+        onChange: function() {
+          if (chart) {
+            chart.showSelectedLines(getShowSelectedLines());
+          }
+          if (channelListeners.size > 0) {
+            sendMessage({
+              type: "set display options",
+              display_options: {
+                showSelected: getShowSelectedLines()
+              }
+            });
+          }
+        }
+      });
+
+    // handle change to showUnselectedLine options
+    $('.ui.checkbox.showUnselectedLines').checkbox({
+      onChange: function() {
+        if (chart) {
+          chart.showUnselectedLines(getShowUnselectedLines());
+        }
+        if (channelListeners.size > 0) {
+          sendMessage({
+            type: "set display options",
+            display_options: {
+              showUnselected: getShowUnselectedLines()
+            }
+          });
+        }
+      }
+    });
+
+    // handle change to showAxisTicks option
+    $('.ui.checkbox.showAxisTicks').checkbox({
+      onChecked: function() {
+        chart ? chart.showAxisTicks(true) : null;
+      },
+      onUnchecked: function() {
+        chart ? chart.showAxisTicks(false) : null;
+      }
+    });
+
+    // handle change to showAxisTicks option
+    $('.ui.checkbox.showDataTable').checkbox({
+      onChange: function() {
+        createTable();
+      }
+    });
+
+    // handle change to showHistograms option
+    $('.ui.checkbox.showHistograms').checkbox({
+      onChecked: function() {
+        chart ? chart.setShowHistograms(true) : null;
+      },
+      onUnchecked: function() {
+        chart ? chart.setShowHistograms(false) : null;
+      }
+    });
+
+    // handle change to showAxisStatistics options
+    $('.ui.checkbox.showAxisStatistics').checkbox({
+      onChange: function() {
+        if (chart) {
+          chart.showSummaryStatistics(getShowAxisStatistics());
+        }
+      }
+    });
+
+    // handle change to categorical rectangle mode
+    $('.ui.checkbox.useProportionalCategoryRects').checkbox({
+      onChange: function() {
+        if (chart) {
+          chart.categoryHeightMode(getUseProportionalCategoryRects() ? "proportional" : "equal");
+        }
+      }
+    })
+
+    // handle change to showAxisLabels option
+    $('.ui.checkbox.showAxisLabels').checkbox({
+      onChecked: function() {
+        chart ? chart.showAxisTickLabels(true) : null;
+      },
+      onUnchecked: function() {
+        chart ? chart.showAxisTickLabels(false) : null;
+      }
+    });
+
+    // setup trigger to show settings dialog
+    $('.ui.modal.settingsModal')
+      .modal('attach events', '.settingsItem', 'show');
+
+    // setup column datatype dialog
+    $('.ui.modal.columnTypeModal')
+      .modal({
+        closable: false,
+        onHidden: function() {
+          d3.select('#datatypeTable').selectAll('*').remove();
+          d3.select('#fileHeadTable').selectAll('*').remove();
+        },
+        onVisible: function() {
+          // populate column datatype table
+          datatypeTable = new Tabulator('#datatypeTable', {
+            height: '200px',
+            layout: "fitColumns",
+            data: csvData.columnTypes,
+            columns: [
+              {formatter: "rowSelection", width: 30, title: "Load", titleFormatter: "rowSelection", hozAlign: "center", headerSort: false, cellClick: function(e, cell){cell.getRow().toggleSelect();}},
+              {title:"Name", field:"name"},
+              {title:"Data Type", field:"type", editor:"select", editorParams:{values:{"numerical":"Numerical", "categorical":"Categorical", "temporal":"Temporal"}}},
+              // {title:"Load", field:"read", hozAlign:"center", editor:true, formatter:"tickCross"}
+            ]
+          });
+          datatypeTable.selectRow();
+
+          // populate data head table
+          var fileHeadTable = new Tabulator('#fileHeadTable', {
+            data: csvData.slice(0,10),
+            height: '160px',
+            autoColumns: true,
+            layout: 'fitDataFill'
+          });
+        },
+        onApprove: function() {
+          const selectedRows = datatypeTable.getSelectedData();
+          selectedRows.forEach(r => {csvData.columnTypes[r.idx].read = true;});
+          loadCSVDataPromise().catch(err => console.error(err));
+          return true;
+        }
+      });
+
+    // setup show visible dimensions dialog actions
+    $('.ui.modal.dimensionsModal')
+      .modal({
+        closable: false,
+        autofocus: false,
+        onShow: function() {
+          populateDimensionSelect();
+        },
+        onApprove: function() {
+          const selectedDimensions = $('#dimensionSelect').dropdown('get value');
+
+          if (selectedDimensions.length === 0) {
+            window.alert("Please select at least one dimension");
+            return false;
+          }
+
+          if (chartData && fileData) {
+            const originalDimensionOrder = chartData.dimensions.map(d => d.name);
+
+            const visibleTupleIDs = chartTuplesHistory.length > 0 ? new Set(chartData.tuples.map(d => d[tupleIDProperty])) : null;
+
+            chartData = {
+              dimensions: fileData.dimensions.filter(d => selectedDimensions.includes(d.name))
+            };
+            sortChartDimensions(originalDimensionOrder);
+
+            if (visibleTupleIDs !== null) {
+              chartData.tuples = fileData.tuples.filter(t => visibleTupleIDs.has(t[tupleIDProperty]));
+            } else {
+              chartData.tuples = fileData.tuples;
+            }
+
+            chartData.tuples = chartData.tuples.map(t => {
+              var tuple = {};
+              chartData.dimensions.forEach(d => {
+                tuple[d.name] = t[d.name];
+              });
+              tuple[tupleIDProperty] = t[tupleIDProperty];
+              return tuple;
+            });
+
+            // chartData.tuples = fileData.tuples.map(t => {
+            //   var datum = {};
+            //   chartData.dimensions.forEach(d => {
+            //     datum[d.name] = t[d.name];
+            //   });
+            //   datum[tupleIDProperty] = t[tupleIDProperty];
+            //   return datum;
+            // });
+
+            // console.log(chartData.tuples.length);
+            // if (visibleTupleIDs !== null) {
+            //   chartData.tuples = chartData.tuples.filter(t => visibleTupleIDs.has(t["_id_"]));
+            // }
+
+            createChart();
+            sendChartDataAsMessage();
+            populateQueryDimensionDropdown();
+            updateStatisticLabels();
+            createTable();
+            /*
+            $('.undoLastFilterItem').addClass('disabled');
+            chartTuplesHistory = [];
+            */
+          }
+        }
+      });
+
+    // setup trigger to show visible dimensions dialog
+    $('.ui.modal.dimensionsModal')
+      .modal('attach events', '.dimensionsItem', 'show');
+
+    // handle search text input typing
+    // TODO Replace text input with searchable dropdown
+    $('.textSearchInput')
+      .on('input', function(e) {
+        if (chartData && chart) {
+          const searchDim = getTextSearchDimension();
+          const searchTokens = e.target.value.split(",").map(d => d.trim().toLowerCase()).filter(d => d.length > 0);
+          let matched = new Set();
+          searchTokens.forEach(token => {
+            const re = new RegExp(`\\b(${token})`, 'i');
+            chartData.tuples.forEach(tuple => {
+              if (re.test(tuple[searchDim])) {
+                matched.add(tuple);
+              }
+            });
+          });
+          // chartData.tuples.forEach(tuple => {
+          //   const lowerValue = tuple[searchDim].toLowerCase();
+          //   searchTokens.forEach(token => {
+          //     // TODO replace with a better regex match (snapshot?)
+          //     if (lowerValue.includes(token)) {
+          //       matched.add(tuple);
+          //     }
+          //   });
+          // });
+
+          const selectedValues = [...matched].map(d => d[searchDim]);
+          chart.setDimensionSelection(searchDim, selectedValues);
+        }
+      });
+
+    // handle request to redraw chart
+    $('.redrawItem')
+      .on('click', () => {
+        resizeChart();
+        // createSPlot();
+      });
+
+    // handle remove selected data item
+    $('.removeSelectedItem')
+      .on('click', function(e) {
+        // TODO: prevent user from removing all data or removing no data
+        if (chart && chartData) {
+          chartTuplesHistory.push(new Set(chartData.tuples.map(t => t[tupleIDProperty])));
+          // chartTuplesHistory.push(chartData.tuples.slice());
+          if (chartTuplesHistory.length > maxTupleHistory) {
+            chartTuplesHistory.shift();
+          }
+          chartData.tuples = chart.unselectedTuples();
+          createChart();
+          sendChartDataAsMessage();
+          updateStatisticLabels();
+          createTable();
+          $('.undoLastFilterItem').removeClass('disabled');
+        }
+      });
+
+    // handle keep selected data item
+    $('.keepSelectedItem')
+      .on('click', function(e) {
+        if (chart && chartData) {
+          chartTuplesHistory.push(new Set(chartData.tuples.map(t => t[tupleIDProperty])));
+          // chartTuplesHistory.push(chartData.tuples.slice());
+          if (chartTuplesHistory.length > maxTupleHistory) {
+            chartTuplesHistory.shift();
+          }
+          chartData.tuples = chart.selectedTuples();
+          createChart();
+          sendChartDataAsMessage();
+          updateStatisticLabels();
+          createTable();
+          $('.undoLastFilterItem').removeClass('disabled');
+        }
+      });
+
+    // handle undo last file action
+    $('.undoLastFilterItem')
+      .on('click', function(e) {
+        if (chart && chartTuplesHistory.length > 0) {
+          const lastVisibleTupleIDs = chartTuplesHistory.pop();
+
+          // get last visible tuple data from fileData
+          chartData.tuples = fileData.tuples.filter(t => lastVisibleTupleIDs.has(t[tupleIDProperty]));
+
+          // get only visible dimensions for tuples
+          chartData.tuples = chartData.tuples.map(t => {
+            var tuple = {};
+            chartData.dimensions.forEach(d => {
+              tuple[d.name] = t[d.name];
+            });
+            tuple[tupleIDProperty] = t[tupleIDProperty];
+            return tuple;
+          });
+
+          // if (visibleTupleIDs !== null) {
+          //     chartData.tuples = fileData.tuples.filter(t => visibleTupleIDs.has(t["_id_"]));
+          //   } else {
+          //     chartData.tuples = fileData.tuples;
+          //   }
+
+          //   chartData.tuples = chartData.tuples.map(t => {
+          //     var tuple = {};
+          //     chartData.dimensions.forEach(d => {
+          //       tuple[d.name] = t[d.name];
+          //     });
+          //     tuple[tupleIDProperty] = t[tupleIDProperty];
+          //     return tuple;
+          //   });
+
+          // chartData.tuples = chartTuplesHistory.pop();
+          if (chartTuplesHistory.length === 0) {
+            $('.undoLastFilterItem').addClass('disabled');  
+          }
+          createChart();
+          sendChartDataAsMessage();
+          updateStatisticLabels();
+          createTable();
+        }
+      });
+
+    // handle save selected data as CSV
+    $('.saveCSVItem')
+      .on('click', function(e) {
+        if (chart) {
+          // make a copy of the chartData tuples array, omitting the tuple id property
+          const data = chartData.tuples.map(t => {
+            var datum = {};
+            Object.keys(t).forEach((k) => {
+              if (k !== tupleIDProperty) {
+                datum[k] = t[k];
+              }
+            });
+            return datum;
+          });
+          let csvContent = "data:text/csv;chartset=utf-8," + d3.csvFormat(data);
+          var encodedUri = encodeURI(csvContent);
+          var link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", "maven_data.csv");
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+      });
+
+    // get plot settings
+    function getPlotSettings() {
+      return {
+        showAxisStatistics: getShowAxisStatistics(),
+        showHistograms: getShowHistograms(),
+        showAxisTicks: getShowAxisTicks(),
+        openViewTabs: getOpenViewsInTabs(),
+        showAxisLabels: getShowAxisLabels(),
+        categoryHeightMode: getUseProportionalCategoryRects() ? "proportional" : "equal",
+        showSelectedLines: getShowSelectedLines(),
+        selectedLineOpacity: getSelectedLineOpacity(),
+        showUnselectedLines: getShowUnselectedLines(),
+        unselectedLineOpacity: getUnselectedLineOpacity(),
+        chartHeight: getChartHeight(),
+        chartWidthFit: getChartWidthFit(),
+        axisSpacing: getAxisSpacing(),
+        showDataTable: getShowDataTable(),
+        tablePageSize: getDataTablePageSize()
+      };
+    };
+    
+    // handle save selected data as JSON
+    $('.saveJSONItem')
+      .on('click', function(e) {
+        if (chart) {
+          const jsonData = {
+            settings: getPlotSettings(),
+            dimensions: chartData.dimensions.map(d => {
+              return {
+                name: d.name,
+                type: d.type,
+                inverted: d.inverted
+              }
+            }),
+            tuples: chartData.tuples.map(t => {
+                var datum = {};
+                Object.keys(t).forEach((k) => {
+                  if (k !== tupleIDProperty) {
+                    datum[k] = t[k];
+                  }
+                });
+                return datum;
+              })
+          }
+
+          const blob = new Blob([JSON.stringify(jsonData)], {type: "text/json" });
+          const link = document.createElement("a");
+          link.download = "maven_state.json";
+          link.href = window.URL.createObjectURL(blob);
+          link.dataset.downloadurl = ["text/json", link.download, link.href].join(":");
+          const evt = new MouseEvent("click", {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+          });
+          link.dispatchEvent(evt);
+          link.remove();
+        }
+      });
+
+    // initialize dimension select 
+    $('#dimensionSelect')
+      .dropdown({
+        clearable: true
+      });
+
+    // initialize quartile query dropdown and setup change listener
+    $(".quartileQueryDropdown").dropdown({
+      action: 'hide',
+      onChange: function(value, text, $selectedItem) {
+        if (value.length > 0 && !ignoreQueryChange) {
+          // get current query dimension
+          const queryDimensionName = getQueryDimension();
+
+          // get dimension
+          const queryDimension = chartData.dimensions.find(d => d.name === queryDimensionName);
+
+          // get range for quartile query value
+          let queryExtents;
+          if (value === "lower") {
+            queryExtents = [queryDimension.stats.min, queryDimension.stats.q1];
+          } else if (value === "middle") {
+            queryExtents = [queryDimension.stats.q1, queryDimension.stats.q3];
+          } else if (value === "upper") {
+            queryExtents = [queryDimension.stats.q3, queryDimension.stats.max];
+          }
+          // set min and max range values
+          if (queryExtents && chart) {
+            chart.setDimensionSelection(queryDimensionName, queryExtents);
+          }
+        }
+      }
+    });
+
+    // initialize categorical query dropdown and setup change listener
+    $('.categoricalQueryDropdown').dropdown({
+      fullTextSearch: "exact",
+      onChange: function(value, text, $selectedItem) {
+        if (chart && !ignoreQueryChange) {
+          const selectedCategoryIDs = value.length > 0 ? value.split(",").map(d => +d) : [];
+          const queryDimensionName = getQueryDimension();
+          const queryDimension = chartData.dimensions.find(d => d.name === queryDimensionName);
+          const selectedCategories = selectedCategoryIDs.map(d => queryDimension.categories.find(c => c.id === d).name);
+          
+          ignoreQueryChange = true;
+          chart.setDimensionSelection(queryDimensionName, selectedCategories);
+          ignoreQueryChange = false;
+
+          // update table and statistic labels
+          table ? table.setData(chart.selectedTuples()) : null;
+          updateStatisticLabels();
+
+          // consider making this a promise
+          if (channelListeners.size > 0) {
+            sendMessage({
+              type: "set selected data", 
+              selected: chart.selectedTuples().map(d => d[tupleIDProperty])
+            });
+          }
+        }
+      }
+    });
+
+    // add change event listener for query min numerical value input
+    $('#queryMinNumericalValue, #queryMaxNumericalValue')
+      .on('change', function(e) {
+        updateNumericalPCPQuery();
+      });
+
+    // updates the pcp chart selection based on min max numerical query inputs
+    function updateNumericalPCPQuery () {
+      if (chart && !ignoreQueryChange) {
+        const queryDropdownDimension = $('#queryDimensionDropdown').dropdown('get text');
+        const dim = chartData.dimensions.find(d => d.name === queryDropdownDimension);
+
+        let minNumericalValue = document.getElementById('queryMinNumericalValue').value;
+        if (minNumericalValue.length > 0) {
+          minNumericalValue = +minNumericalValue;
+        } else {
+          minNumericalValue = dim.stats.min;
+        }
+
+        let maxNumericalValue = document.getElementById('queryMaxNumericalValue').value;
+        if (maxNumericalValue.length > 0) {
+          maxNumericalValue = +maxNumericalValue;
+        } else {
+          maxNumericalValue = dim.stats.max;
+        }
+
+        let queryDomain = [Math.min(minNumericalValue, maxNumericalValue), Math.max(minNumericalValue, maxNumericalValue)];
+        
+        if (queryDomain[0] < dim.stats.min && queryDomain[1] < dim.stats.min) {
+          queryDomain[0] = queryDomain[1] = dim.stats.min;
+        } else if (queryDomain[0] > dim.stats.max && queryDomain[1] > dim.stats.max) {
+          queryDomain[0] = queryDomain[1] = dim.stats.max;
+        } else {
+          queryDomain[0] = queryDomain[0] < dim.stats.min ? dim.stats.min : queryDomain[0];
+          queryDomain[1] = queryDomain[1] > dim.stats.max ? dim.stats.max : queryDomain[1];
+        }
+
+        ignoreQueryChange = true;
+        $('#queryMinNumericalValue').val(queryDomain[0]);
+        $('#queryMaxNumericalValue').val(queryDomain[1]);
+        chart.setDimensionSelection(queryDropdownDimension, queryDomain);
+        ignoreQueryChange = false;
+
+        // update table and statistic labels
+        table ? table.setData(chart.selectedTuples()) : null;
+        updateStatisticLabels();
+
+        // consider making this a promise
+        if (channelListeners.size > 0) {
+          sendMessage({
+            type: "set selected data", 
+            selected: chart.selectedTuples().map(d => d[tupleIDProperty])
+          });
+        }
+      }
+    }
+
+    // initialize search dimension select
+    $('#queryDimensionDropdown')
+      .dropdown({
+        onChange: function(value, text, $selectedItem) {
+          if (chart) {
+            const dim = chartData.dimensions.find(d => d.name === text);
+            if (dim) {
+              if (dim.type === "categorical") {
+                const values = dim.categories.map((c,i) => ({
+                  name: c.name,
+                  value: `${c.id}`,
+                  text: c.name,
+                  selected: dim.selectedCategories.has(c.id)
+                }));
+                ignoreQueryChange = true;
+                $('.categoricalQueryDropdown').dropdown('change values', values);
+                $.tab('change tab', 'categorical-query-tab');
+                ignoreQueryChange = false;
+              } else if (dim.type === "numerical") {
+                $.tab('change tab', 'numerical-query-tab');
+                ignoreQueryChange = true;
+                if (dim.currentSelection && dim.currentSelection.length > 0) {
+                  $('#queryMinNumericalValue').val(d3.min(dim.currentSelection));
+                  $('#queryMaxNumericalValue').val(d3.max(dim.currentSelection));
+                } else {
+                  $('#queryMinNumericalValue').val(null);
+                  $('#queryMaxNumericalValue').val(null);
+                }
+                $('.quartileQueryDropdown').dropdown('clear');
+                ignoreQueryChange = false;
+              } else if (dim.type === "temporal") {
+                $.tab('change tab', 'temporal-query-tab');
+              }
+            }
+          }
+        }
+      });
+
+    // clears the current values in query inputs removing current values and
+    // restoring to default state
+    function clearQueryInputs() {
+      const currentQueryDimensionName = getQueryDimension();
+      if (currentQueryDimensionName) {
+        const queryDimension = chartData.dimensions.find(d => d.name === currentQueryDimensionName);
+        if (queryDimension) {
+          ignoreQueryChange = true;
+          if (queryDimension.type === 'categorical') {
+            const values = queryDimension.categories.map((c,i) => ({
+                name: c.name,
+                value: `${c.id}`,
+                text: c.name,
+                selected: queryDimension.selectedCategories.has(c.id)
+              }));
+            $('.categoricalQueryDropdown').dropdown('change values', values);
+          } else if (queryDimension.type === 'numerical') {
+            $('#queryMinNumericalValue').val(null);
+            $('#queryMaxNumericalValue').val(null);
+            $('quartileQueryDropdown').dropdown('clear');
+          }
+          ignoreQueryChange = false;
+        }
+      }
+    };
+
+    // initialize top menu dropdowns
+    $('.dataMenuItem.ui.dropdown')
+      .dropdown({
+        action: 'select'
+      });
+
+    $('.filterMenuItem.ui.dropdown')
+      .dropdown({
+        action: 'select'
+      });
+
+    $('.viewsMenuItem.ui.dropdown')
+      .dropdown({
+        action: 'select'
+      });
+
+    // open csv file
+    $('.loadCSVItem')
+      .on('click', function(e) {
+        loadingJSONFile = false;
+        document.getElementById('fileInput').setAttribute("accept", ".csv,.txt");
+        $('#fileInput').click();
+      });
+    
+    $('.scatterplotItem')
+      .on('click', function(e) {
+        if (getOpenViewsInTabs()) {
+          window.open(`./scatterplot.html?mvid=${maven_app_mvid}`);
+        } else {
+          window.open(`./scatterplot.html?mvid=${maven_app_mvid}`, '_blank', "height=700,width=800");
+        }
+      });
+
+    $('.mapViewItem')
+      .on('click', function(e) {
+        if (getOpenViewsInTabs()) {
+          window.open(`./map.html?mvid=${maven_app_mvid}`);
+        } else {
+          window.open(`./map.html?mvid=${maven_app_mvid}`, '_blank', "height=900,width=800");
+        }
+      });
+    
+    $('.histogramViewItem')
+      .on('click', function(e) {
+        if (getOpenViewsInTabs()) {
+          window.open(`./histogram.html?mvid=${maven_app_mvid}`);
+        } else {
+          window.open(`./histogram.html?mvid=${maven_app_mvid}`, '_blank', "height=600,width=800");
+        }
+      });
+    
+    // open csv file
+    $('.loadJSONItem')
+      .on('click', function(e) {
+        loadingJSONFile = true;
+        document.getElementById('fileInput').setAttribute("accept", ".json");
+        $('#fileInput').click();
+      });
+    
+    // handle csv file input change
+    $('#fileInput')
+      .on('change', function(e) {
+        if (e.target.files) {
+          if (loadingJSONFile) {
+            loadJSONFile(e.target.files[0]);
+          } else {
+            loadCSVFile(e.target.files[0]);
+          }
+        }
+      });    
+
+    // handle load Cars Sample Dataset menu item
+    $('.loadCarsDataItem')
+      .on('click', () => {
+        loadCarsData();
+      });  
+      
+    // handle load Cars Sample Dataset menu item
+    // $('.loadNYTCovidDataItem')
+    //   .on('click', () => {
+    //     loadNYTCOVIDData();
+    //   });  
+
+    // ui checkbox showAllColumnsCheckbox
+    $('.ui.checkbox.showAllColumnsCheckbox')
+      .popup();
+
+    $('.menu .item').tab();
+
+    // handle resizing the window
+    // window.addEventListener("resize", () => {
+    //   resizeChart();
+    // });
+
+    // document.getElementById('chart').style.height = `${getChartHeight()}px`;
+
+    const readVersionInfo = () => {
+      d3.json("data/appinfo.json")
+        .then(d => {
+          $('#mavenVersionNumberText')
+            .text(`${d.name} Ver. ${d.version}`);
+          // $('#mavenVersionNumberText')
+          //   .text(`${d.name} Version ${d.version}`);
+          // $('#mavenVersionDateText')
+          //   .text(`${d.release_date}`);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    };
+
+    window.onload = function () {
+      setupBroadcastChannel();
+      readVersionInfo();
+    };
+  </script>
+</body>

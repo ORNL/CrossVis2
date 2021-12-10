@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta description="CrossVis: An exploratory visual analytics tool for multivariate data.">
+
+  <link rel="stylesheet" type="text/css" href="./css/crossvis.css">
+  <link rel="stylesheet" type="text/css" href="./css/tabulator.min.css">
+  <link rel="stylesheet" type="text/css" href="./js/Semantic-UI/semantic.min.css">
+
+  <title>CrossVis (Map View) - Regions Data Visualization</title>
+
+  <style>
+    @font-face {
+      font-family: "KoHo";
+      src: url("./fonts/KoHo/KoHo-Medium.ttf");
+    }
+  </style>
+</head>
+
+<body>
+  <input id="fileInput" type="file" style="display: none;">
+
+  <div class="ui inverted fixed borderless menu">
+    <div class="ui medium header item" style="font-family: 'KoHo', sans-serif; font-size: 1.6rem;">
+      <div class="content">
+        CrossVis
+      </div>
+    </div>
+    <a class="ui item settingsItem">
+      Map Settings...
+    </a>
+    <a class="ui item redrawItem">
+      Redraw
+    </a>
+    <div class="right menu">
+      <div class="ui item">
+        <img class="ui image" src="./img/regions-logo-color.png" height="34px">
+      </div>
+    </div>
+  </div>
+
+  <div class="ui modal settingsModal">
+    <i class="close icon"></i>
+    <div class="header">
+      Map Settings
+    </div>
+    <div class="content">
+      <form class="ui form settingsForm">
+        <h3 class="ui dividing header">Map Feature Options</h3>
+        <div class="two fields">
+          <div class="field">
+            <label>Feature Type</label>
+            <select class="ui search dropdown" name="featureType" id="featureTypeSelect">
+              <option value="">Choose Feature Type</option>
+              <option value="county">County</option>
+              <option value="cbsa">CBSA</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Feature Display Mode</label>
+            <select class="ui search dropdown" id="featureDisplayModeSelect">
+              <option value="area" selected="">Area</option>
+              <option value="point">Point</option>
+            </select>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="field">
+            <label>Feature Identifier Dimension</label>
+            <select class="ui search dropdown" name="featureID" id="featureIDSelect">
+              <option value="">Choose Dimension</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Feature Name Dimension</label>
+            <select class="ui search dropdown" name="featureName" id="featureNameSelect">
+              <option value="">Choose Dimension</option>
+            </select>
+          </div>
+        </div>
+        <h3 class="ui dividing header">Data and Display Options</h3>
+        <div class="inline field">
+          <div class="ui checkbox showNoDataCheckbox">
+            <input type="checkbox">
+            <label>Show Locations with No Data</label>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="field">
+            <label>Color Scheme</label>
+            <select class="ui search dropdown" id="colorSchemeSelect">
+              <option value="OrRd" selected="">Orange - Red</option>
+              <option value="YlGn">Yellow - Green</option>
+              <option value="YlGnBu">Yellow - Green - Blue</option>
+              <option value="YlOrBr">Yellow - Orange - Brown</option>
+              <option value="greens">Greens</option>
+              <option value="blues">Blues</option>
+              <option value="greys">Greys</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Color Scale Mode</label>
+            <div class="ui selection dropdown" data-content="Quantize scales are similar to linear scales, except they use a discrete range.\nLinear scales use a continuous range. Quantile scales separate values into intervals of similar absolute frequency." id="colorScaleSelect">
+              <div class="text"></div>
+              <i class="dropdown icon"></i>
+            </div>
+          </div>
+        </div>
+        <div class="two fields">
+          <div class="field">
+            <label>Multiple Value Aggregation Mode</label>
+            <select class="ui search dropdown" id="valueAggregationModeSelect">
+              <option selected="">Mean</option>
+              <option>Median</option>
+              <option>Minimum</option>
+              <option>Maximum</option>
+              <option>Min/Max Range</option>
+              <option>Sum</option>
+              <option>Standard Deviation</option>
+              <option>Count</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui deny black right labeled icon button">
+        <i class="close icon"></i>
+        Cancel
+      </div>
+      <div class="ui positive right labeled icon submit button">
+        <i class="checkmark icon"></i>
+        Apply
+      </div>
+    </div>
+  </div>
+
+  <div class="ui modal unmappedValuesModal">
+    <i class="close icon"></i>
+    <div class="header unmappedValuesModalHeader">Unmapped Locations</div>
+    <div class="scrolling content">
+      <div class="description">
+        <p>The locations listed below could not be mapped in the current map projection. This situation often occurs for locations outside the lower 48 U.S. states, Alaska, and Hawaii.</p>
+      </div>
+      <div id="sidechart"></div>
+    </div>
+  </div>
+
+  <div style="padding: 84px 15px 0px;">
+    <div class="ui raised secondary segment">
+      <div class="ui form">
+        <div class="two fields">
+          <div class="field">
+            <div class="ui fluid labeled input">
+              <div class="ui label">Data Dimension</div>
+              <div class="ui fluid selection dropdown" id="mapValueDimensionSelect">
+                <div class="default text">Choose Data Dimension</div>
+                <i class="dropdown icon"></i>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="ui fluid labeled input">
+              <div class="ui label">Value Display Format</div>
+              <div class="ui fluid selection dropdown" data-content="Quantize method" id="valueFormatSelect">
+                <div class="default text">Choose Format</div>
+                <i class="dropdown icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ui stackable two column grid">
+      <div class="ten wide column">
+        <div class="ui center aligned segment">
+          <div class="ui fluid grid">
+            <div class="ten wide column left aligned">
+              <h4 class="ui header" id="titleHeading">Map View</h4>
+            </div>
+            <div class="six wide column right aligned">
+              <div class="ui primary compact button unmappedValuesButton">Unmapped Values</div>
+            </div>
+          </div>
+          <div id="chart"></div>
+          <div id="legend"></div>
+        </div>
+      </div>
+      <div class="six wide column">
+        <div class="ui segment">
+          <div class="ui fluid grid">
+            <div class="ten wide column left aligned">
+              <h4 class="ui header">Clicked Location(s) Details</h4>
+            </div>
+            <div class="six wide column right aligned">
+              <div class="ui primary compact button clearClickedDataTableButton">Clear</div>
+            </div>
+          </div>
+          <div class="ui hidden divider"></div>
+          <div id="table_container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="ui center aligned segment">
+      <div class="ui fluid grid">
+        <div class="ten wide column left aligned">
+          <h4 class="ui header" id="titleHeading">Map View</h4>
+        </div>
+        <div class="six wide column right aligned">
+          <div class="ui primary compact button unmappedValuesButton">Unmapped Values</div>
+        </div>
+      </div>
+      <div id="chart"></div>
+      <div id="legend"></div>
+    </div>
+    <div class="ui segment">
+      <div class="ui fluid grid">
+        <div class="ten wide column left aligned">
+          <h4 class="ui header">Clicked Location(s) Details</h4>
+        </div>
+        <div class="six wide column right aligned">
+          <div class="ui primary compact button clearClickedDataTableButton">Clear</div>
+        </div>
+      </div>
+      <div class="ui hidden divider"></div>
+      <div id="table_container"></div>
+    </div> -->
+  </div>
+
+  <div class="ui basic center aligned footer segment">
+    <span id="mavenVersionNumberText"></span><br/>
+  </div>
+    
+  <script type="text/javascript" src="js/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="js/Semantic-UI/semantic.min.js"></script>
+  <script type="text/javascript" src="js/d3.min.js"></script>
+  <script type="text/javascript" src="js/d3-array.min.js"></script>
+  <script type="text/javascript" src="js/mapChart.js"></script>
+  <script type="text/javascript" src="js/barChart.js"></script>
+  <script type="text/javascript" src="js/tabulator.min.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/topojson@3"></script>
+  <script type="text/javascript" src="js/turf.min.js"></script>
+  <script type="text/javascript" src="js/legend.js"></script>
+
+  <script>
+    const cbsaFeatureFile = './data/CBSAs_2020._wgs_shape.geojson';
+    const ustopologyFile = './data/counties-10m.json';
+
+    const chartMargin = {top: 10, right: 10, bottom: 10, left: 10};
+    const sideChartMargin = {top: 20, right: 20, bottom: 10, left: 100};
+
+    const numberFormat = d3.format(",");
+    const percentFormat = d3.format(".0%");
+    const displayOptionsMap = new Map([
+      ['selectedColor', 'steelblue'],
+      ['unselectedColor', '#CCC'],
+      ['selectedOpacity', 0.3],
+      ['unselectedOpacity', 0.1],
+      ['showSelected', true],
+      ['showUnselected', true]
+    ]);
+    var chart;
+    var mapGeometries;
+    var dimensions;
+    var dataMap;
+    var chartData;
+    var selectedData;
+    var clickedData;
+    var ignoreAxisDropdowns = false;
+    const broadcastChannel = new BroadcastChannel("maven_channel");
+    var maven_app_mvid;
+    const map_mvid = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
+    const maxLegendWidth = 600;
+    const maxMapWidth = 800;
+    var unmappedData;
+    var mappedData;
+    var clickedDataTable;
+
+    const sendMessage = (msg) => {
+      if (maven_app_mvid) {
+        msg.dst = maven_app_mvid;
+        msg.src = map_mvid;
+        broadcastChannel.postMessage(msg);
+      }
+    };
+
+    const receiveMessage = (event) => {
+      // ignore untrusted events
+      if (!event.isTrusted) return;
+      // ignore events not from maven main app, without dst/src, or not sent to this splot window
+      if (!event.data.src || event.data.src !== maven_app_mvid) return;
+      if (event.data.dst) {
+        // if a dst id is given, make sure it the dst id of this splot window
+        // if a dst id is not given, the message is for all listeners and the splot window id won't be checked
+        if (event.data.dst !== map_mvid) return;
+      }
+
+      if (event.data.type === "hello") {
+        sendMessage({type: 'send data'});
+      } else if (event.data.type === "set data") {
+        dimensions = event.data.dimensions;
+        dataMap = new Map();
+        clickedData = new Set();
+        createDetailsTable();
+        chartData = null;
+        chart = null;
+        event.data.tuples.forEach(d => {
+          dataMap.set(d['_id_'], d);
+        });
+        selectedData = null;
+        if (event.data.selected) {
+          selectedData = event.data.selected.map(d => dataMap.get(d));
+        }
+        if (event.data.display_options) {
+          setChartDisplayOptions(event.data.display_options);
+        }
+        initializeDimensionSelects();
+        $('.ui.modal.settingsModal').modal('show');
+      } else if (event.data.type === "set selected data") {
+        selectedData = event.data.selected.map(d => dataMap.get(d));
+        if (chart) {
+          chart.selected(selectedData);
+        }
+      } else if (event.data.type === "set display options") {
+        setChartDisplayOptions(event.data.display_options);
+      }
+    };
+
+    const updateTitle = () => {
+      let titleStr = `'${getMapValueDimension()}' `;
+      if (!$('#valueAggregationModeSelect').parent().hasClass('disabled')) {
+        titleStr += `(${getValueAggregationMode()}) `;
+      }
+      titleStr += `by ${getFeatureType() === "cbsa" ? "CBSA" : getFeatureType() === "state" ? "State" : "County"}`;
+
+      $('#titleHeading').html(titleStr);
+    };
+
+    const setChartDisplayOptions = (options) => {
+      // Object.keys(options).forEach(k => {
+      //   if (displayOptionsMap.has(k)) {
+      //     displayOptionsMap.set(k, options[k]);
+      //   }
+      // });
+
+      // if (chart) {
+      //   Object.keys(options).forEach(k => {
+      //     if (k === "selectedColor") {
+      //       chart.selectedColor(displayOptionsMap.get(k));
+      //     } else if (k === "selectedOpacity") {
+      //       chart.selectedOpacity(displayOptionsMap.get(k));
+      //     } else if (k === "unselectedColor") {
+      //       chart.unselectedColor(displayOptionsMap.get(k));
+      //     } else if (k === "unselectedOpacity") {
+      //       chart.unselectedOpacity(displayOptionsMap.get(k));
+      //     } else if (k === "showSelected") {
+      //       chart.showSelectedDots(displayOptionsMap.get(k));
+      //     } else if (k === "showUnselected") {
+      //       chart.showUnselectedDots(displayOptionsMap.get(k));
+      //     }
+      //   });
+      // }
+    };
+
+    const setupBroadcastChannel = () => {
+      broadcastChannel.addEventListener("message", receiveMessage);
+      sendMessage({type: "hello"});
+    };
+
+    const initializeDimensionSelects = () => {
+      const catDimensions = dimensions.filter(d => d.type === "categorical").map(d => d.name);
+
+      var dropdownValues = catDimensions.map(d => {
+        return {
+          name: d, 
+          value: d, 
+          text: d, 
+          selected: false
+        };
+      });
+      dropdownValues.forEach(d => {
+        if (/^county/gi.test(d.value)) {
+          // set feature type to county
+          $('#featureTypeSelect').dropdown('set selected', 'county');
+        } else if (/^cbsa/gi.test(d.value)) {
+          // set feature type to cbsa
+          $('#featureTypeSelect').dropdown('set selected', 'cbsa');
+        }
+      })
+      dropdownValues.forEach(d => {
+        if (/countyfips|cbsacode/gi.test(d.value)) {
+          d.selected = true;
+        } else {
+          d.selected = false;
+        }
+      });
+      $('#featureIDSelect').dropdown('change values', dropdownValues);
+
+      dropdownValues.forEach(d => {
+        if (/countyname|cbsaname/gi.test(d.value)) {
+          d.selected = true;
+        } else {
+          d.selected = false;
+        }
+      })
+      $('#featureNameSelect').dropdown('change values', dropdownValues);
+
+      const numDimensions = dimensions.filter(d => d.type === "numerical").map(d => d.name);
+      var dropdownValues = numDimensions.map((d,i) => {
+        return {
+          name: d, 
+          value: d, 
+          text: d, 
+          selected: i === 0 ? true : false
+        };
+      });
+      $('#mapValueDimensionSelect').dropdown('change values', dropdownValues);
+    };
+    
+    const loadChartData = () => {
+      const mapValueDimension = getMapValueDimension();
+      const mapDisplayMode = getValueAggregationMode();
+      const featureNameDimension = getFeatureNameDimension();
+      const featureIDDimension = getFeatureIDDimension();
+
+      // reset chart data arrays and sets
+      chartData = null;
+      unmappedData = new Set();
+      mappedData = new Set();
+
+      if (dataMap && mapValueDimension && featureIDDimension && featureNameDimension) {
+        const locationData = d3.groups([...dataMap.values()], d => d[featureIDDimension]);
+        // console.log(`max values per location: ${d3.max(locationData.map(d => d[1].length))}`);
+
+        // if multiple values at any location we need to aggregate the values
+        // otherwise every location has one value so just grab each location's value
+        if (d3.max(locationData.map(d => d[1].length)) === 1) {
+          // disable the valueAggregationModeSelect if not already disabled
+          if (!$('#valueAggregationModeSelect').parent().hasClass('disabled')) {
+            $('#valueAggregationModeSelect').parent().addClass('disabled');
+            $('#valueAggregationModeSelect').dropdown('set selected', 'Mean');
+          }
+
+          // every location has just one value
+          chartData = locationData.map(d => d[1][0]);
+        } else {
+          if ($('#valueAggregationModeSelect').parent().hasClass('disabled')) {
+            $('#valueAggregationModeSelect').parent().removeClass('disabled');
+          }
+          chartData = locationData.map(d => {
+            let datum = {};
+            datum[featureIDDimension] = d[0];
+            datum[featureNameDimension] = d[1][0][featureNameDimension];
+
+            Object.keys(d[1][0]).forEach(propertyName => {
+              if (propertyName !== featureIDDimension && propertyName !== featureNameDimension && typeof d[1][0][propertyName] === "number") {
+                switch(mapDisplayMode) {
+                  case 'Mean':
+                    datum[propertyName] = d3.mean(d[1], v => v[propertyName]);
+                    break;
+                  case 'Minimum':
+                    datum[propertyName] = d3.min(d[1], v => v[propertyName]);
+                    break;
+                  case 'Maximum':
+                    datum[propertyName] = d3.max(d[1], v => v[propertyName]);
+                    break;
+                  case 'Median':
+                    datum[propertyName] = d3.median(d[1], v => v[propertyName]);
+                    break;
+                  case 'Min/Max Range':
+                    datum[propertyName] = d3.max(d[1], v => v[propertyName]) - d3.min(d[1], v => v[propertyName]);
+                    break;
+                  case 'Sum':
+                    datum[propertyName] = d3.sum(d[1], v => v[propertyName]);
+                    break;
+                  case 'Standard Deviation':
+                    datum[propertyName] = d3.deviation(d[1], v => v[propertyName]);
+                    break;
+                  case 'Count':
+                    datum[propertyName] = d[1].length;
+                    break;
+                }
+              }
+            });
+
+            return datum;
+          });
+        }
+
+        // separate mapped data from unmapped data
+        const features = getFeatureType() === "cbsa" ? mapGeometries.cbsaShapes.features : mapGeometries.countyShapes.features
+        chartData.forEach(d => {
+          if (features.findIndex(f => f.id === d[featureIDDimension]) === -1) {
+            unmappedData.add(d)
+          } else {
+            mappedData.add(d);
+          }
+        });
+
+        // update count on the unmapped values button
+        $('.unmappedValuesButton').text(`(${unmappedData.size}) Unmapped Values`);
+      }
+    };
+
+    const createSideChart = () => {
+      d3.select("#sidechart").selectAll('*').remove();
+      if (unmappedData) {
+        const mapValueDimension = getMapValueDimension();
+        const featureNameDimension = getFeatureNameDimension();
+
+        $('.unmappedValuesModalHeader').text(`Unmapped '${mapValueDimension}' Locations`);
+
+        const chartWidth = document.getElementById('sidechart').clientWidth;
+        const barHeight = 14;
+        const data = [...unmappedData].sort((a,b) => d3.descending(a[mapValueDimension], b[mapValueDimension]));
+        
+        let barColor = "#444";
+        if (chart) {
+          const colorRange = chart.colorScale().range();
+          barColor = colorRange[colorRange.length - 1];
+        }
+        
+        const sidechart = barChart()
+          .width(chartWidth)
+          .height(barHeight * data.length + sideChartMargin.top + sideChartMargin.bottom)
+          .barColor(barColor)
+          .categoryValue(d => d[featureNameDimension])
+          .valueFormat(d3.format(getValueFormat()))
+          .barValue(d => d[mapValueDimension])
+          .categories([...new Set(data.map(d => d[featureNameDimension]))])
+          .margin(sideChartMargin);
+        d3.select('#sidechart').call(sidechart, data);
+      }
+    };
+
+    const updateClickedDataTable = () => {
+      clickedDataTable.setData([...clickedData].reverse());
+    };
+
+    const handleMapFeatureClick = (id, clickAction) => {
+      const IDDim = getFeatureIDDimension();
+      if (clickAction === "clicked") {
+        dataMap.forEach((value, key) => {
+          if (value[IDDim] === id) {
+            clickedData.add(value);
+          }
+        });
+      } else if (clickAction === "unclicked") {
+        clickedData.forEach(d => {
+          if (d[IDDim] === id) {
+            clickedData.delete(d);
+          }
+        });
+      }
+      updateClickedDataTable();
+    };
+
+    const createPlot = () => {
+      d3.select("#chart").selectAll("*").remove();
+     
+      clickedDataTable.clearData();
+      clickedData.clear();
+
+      if (!chartData) {
+        loadChartData();
+      }
+
+      if (chartData) {
+        const mapValueDimension = getMapValueDimension();
+        const featureIDDimension = getFeatureIDDimension();
+        const featureNameDimension = getFeatureNameDimension();
+        const chartWidth = document.getElementById('chart').clientWidth > maxMapWidth ? maxMapWidth : document.getElementById('chart').clientWidth;
+        const chartHeight = chartWidth * 0.6256410256410256;
+
+        chart = mapChart()
+          .width(chartWidth)
+          .height(chartHeight)
+          .featureClickHandler(handleMapFeatureClick)
+          .margin(chartMargin)
+          .colorScheme(getColorScheme())
+          .colorScaleMode(getColorScaleMode())
+          .valueFormat(d3.format(getValueFormat()))
+          .showNoDataItems(getShowNoDataLocations())
+          .featureDisplayMode(getFeatureDisplayMode())
+          .dataValue(d => d[mapValueDimension])
+          .idValue(d => d[featureIDDimension])
+          .nameValue(d => d[featureNameDimension]);
+
+        d3.select('#chart').call(chart, 
+          [...mappedData],
+          mapGeometries, 
+          getFeatureType() === "cbsa" ? mapGeometries.cbsaShapes : mapGeometries.countyShapes, 
+          selectedData);
+      }
+      updateTitle();
+      createLegend();
+    };
+
+    const createLegend = () => {
+      d3.select('#legend').selectAll('*').remove();
+      if (chart) {
+        const divWidth = document.getElementById('legend').clientWidth;
+        const legendWidth = divWidth > maxLegendWidth ? maxLegendWidth : divWidth;
+
+        if (getFeatureDisplayMode() === "area") {  
+          const colorScale = chart.colorScale();
+
+          const g = d3.select('#legend')
+            .append('svg')
+              .attr('width', divWidth)
+              .attr('height', 50);
+
+          g.append("g")
+            .attr('class', 'legend')
+            .attr('stroke', 'none')
+            .attr('fill', '#000')
+            .style('font', '10px sans-serif')
+            .style('font-weight', 'bold')
+            .attr('transform', `translate(${(divWidth/2 - legendWidth/2)},4)`)
+            .append(() => legend({
+              color: colorScale,
+              title: `${getMapValueDimension()}`,
+              width: `${legendWidth}`,
+              tickFormat: getValueFormat()
+            }));
+        } else if (getFeatureDisplayMode() === "point") {
+          const scalePadding = 8;
+
+          const radiusScale = chart.radiusScale().copy().nice(6);
+
+          const legend = d3.select('#legend')
+            .append('svg')
+              .attr('width', divWidth)
+              .attr('height', 2 * radiusScale.range()[1]);
+          
+          const ticks = radiusScale.ticks(6);
+          const xOffsets = ticks.map((d,i) => {
+            let dx = radiusScale(d) / 2;
+            for (let j = 0; j < i; j++) {
+              dx += 2 * radiusScale(ticks[j]) + scalePadding;
+            }
+            return dx;
+          });
+
+          const dx = (divWidth - (xOffsets[xOffsets.length-1] + radiusScale(ticks[ticks.length-1] + scalePadding))) / 2;
+          const g = legend.append("g")
+              .attr("transform", `translate(${dx}, ${radiusScale.range()[1]})`)
+              .attr("fill", "#777")
+              .attr("text-anchor", "middle")
+              .style("font", "10px sans-serif")
+            .selectAll("g")
+              .data(ticks)
+            .join("g");
+
+          g.append("circle")
+            .attr("fill", chart.pointColor())
+            .attr("fill-opacity", 0.5)
+            .attr("stroke", "#fff")
+            .attr("cx", (d,i) => xOffsets[i] + radiusScale(d) / 2)
+            .attr("r", radiusScale)
+            .append("title")
+              .text(d => chart.valueFormat()(d));
+            
+          g.append("text")
+            .attr("x", radiusScale(radiusScale.domain()[0]) - 6)
+            .attr("dy", ".5em")
+            .attr("text-anchor", "end")
+            .text(chart.valueFormat()(radiusScale.domain()[0]));
+          
+          g.append("text")
+            .attr("x", xOffsets[xOffsets.length-1] + (2 * radiusScale(radiusScale.domain()[1])))
+            .attr("dy", ".5em")
+            .attr("text-anchor", "start")
+            .text(chart.valueFormat()(radiusScale.domain()[1]));
+        }
+      }
+    };
+
+    // get current feature type (county or cbsa)
+    const getFeatureType = () => {
+      return $('#featureTypeSelect').dropdown('get value');
+    };
+    
+    // get current feature identifier dimension
+    const getFeatureIDDimension = () => {
+      let selectedDim = $('#featureIDSelect').dropdown('get text');
+      if (selectedDim === 'Choose Dimension' || selectedDim === null) {
+        return null;
+      }
+      return selectedDim;
+    };
+    
+    // get current feature name dimension
+    const getFeatureNameDimension = () => {
+      let selectedDim = $('#featureNameSelect').dropdown('get text');
+      if (selectedDim === 'Choose Dimension' || selectedDim === null) {
+        return null;
+      }
+      return selectedDim;
+    };
+
+    // get current feature display mode (point or area)
+    const getFeatureDisplayMode = () => {
+      return $('#featureDisplayModeSelect').dropdown('get value');
+    };
+
+    // get current map value dimension
+    const getMapValueDimension = () => {
+      let selectedDim = $('#mapValueDimensionSelect').dropdown('get text');
+      if (selectedDim === 'Choose Dimension' || selectedDim === null) {
+        return null;
+      }
+      return selectedDim;
+    };
+
+    // get current multiple value aggregation mode
+    // const getMapDisplayMode = () => {
+    const getValueAggregationMode = () => {
+      let selectedMode = $('#valueAggregationModeSelect').dropdown('get text');
+      return selectedMode;
+    };
+
+    const getShowNoDataLocations = () => {
+      return $('.showNoDataCheckbox').checkbox('is checked');
+    };
+
+    // get current color scale setting
+    const getColorScaleMode = () => {
+      return $('#colorScaleSelect').dropdown('get value');
+    };
+
+    // get current color scale palatte
+    const getColorScheme = () => {
+      return $('#colorSchemeSelect').dropdown('get value');
+    };
+
+    // get current value format setting
+    const getValueFormat = () => {
+      return $('#valueFormatSelect').dropdown('get value');
+    };
+
+    // handle request to redraw chart
+    $('.redrawItem')
+      .on('click', () => {
+        createPlot();
+      });
+
+    // setup value format dropdown
+    $('#valueFormatSelect').dropdown({
+      values: [
+        {
+          name: "Decimal",
+          value: ",~r",
+          selected: true
+        },
+        {
+          name: "Integer",
+          value: ",d"
+        },
+        {
+          name: "Percentage",
+          value: "~p"
+        },
+        {
+          name: "Currency",
+          value: "$,.2f"
+        }
+      ],
+      onChange: function(val, text) {
+        if (chart) {
+          chart.valueFormat(d3.format(val));
+          createLegend();
+        }
+      }
+    });
+
+    // setup map value dimension dropdown
+    $('#mapValueDimensionSelect').dropdown({
+      onChange: function(val, text) {
+        if (chart) {
+          chartData = null;
+          loadChartData();
+          chart.replaceData([...mappedData], d => d[text]);
+          // createSideChart();
+          createLegend();
+          updateTitle();
+        }
+      }
+    });
+    
+    // setup other dropdowns    
+    $('#colorScaleSelect').dropdown(
+      {
+        values: [
+          {
+            name: "Quantize",
+            value: "quantize",
+            selected: true
+          },
+          {
+            name: "Quantile",
+            value: "quantile"
+          },
+          {
+            name: "Linear",
+            value: "linear"
+          }
+        ]
+      }
+    );
+    $('#colorSchemeSelect').dropdown();
+    $('#valueAggregationModeSelect').dropdown();
+    $('#featureTypeSelect').dropdown();
+    $('#featureDisplayModeSelect').dropdown();
+    $('#featureIDSelect').dropdown();
+    $('#featureNameSelect').dropdown();
+
+    // handle changes to hide no data locations checkbox
+    $('.ui.checkbox.showNoDataCheckbox').checkbox({
+      // onChange: function() {
+      //   if (chart) {
+      //     chart.showNoDataItems(getShowNoDataLocations());
+      //   }
+      // }
+    });
+
+    $('.ui.modal.settingsModal')
+      .modal({
+        closable: false,
+        autofocus: false,
+        onApprove: function() {
+          const featureType = getFeatureType();
+          const featureIdDim = getFeatureIDDimension();
+          const featureNameDim = getFeatureNameDimension();
+          if (getFeatureType() === null || getFeatureIDDimension() === null && getFeatureNameDimension() === null) {
+            return false;
+          } else {
+            // setLocationProperty();
+            chartData = null;
+            createPlot();
+          }
+        }
+      });
+
+    // setup trigger to show settings dialog
+    $('.ui.modal.settingsModal')
+      .modal('attach events', '.settingsItem', 'show');
+
+    $('.ui.form.settingsForm')
+      .form({
+        fields: {
+          featureType: 'empty',
+          featureID: 'empty',
+          featureName: 'empty'
+        }
+      });
+
+    // setup unmapped values dialog
+    $('.ui.modal.unmappedValuesModal')
+      .modal({
+        onVisible: function() {
+          createSideChart();
+        },
+        onHidden: function() {
+          d3.select("#sidechart").selectAll('*').remove();
+        }
+      });
+
+    // setup clear clicked data table button
+    $('.clearClickedDataTableButton')
+      .click(function() {
+        clickedDataTable.clearData();
+        clickedData.clear();
+        if (chart) {
+          chart.clearClickedFeatures();
+        }
+      });
+    
+    // setup trigger for unmapped values dialog
+    $('.ui.modal.unmappedValuesModal')
+      .modal('attach events', '.unmappedValuesButton', 'show');
+    
+    const readVersionInfo = () => {
+      d3.json("data/appinfo.json")
+        .then(d => {
+          $('#mavenVersionNumberText')
+            .text(`${d.name} Ver. ${d.version}`);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    };
+
+    $('#colorScaleSelect').popup();
+
+    // setup the hover details tabulator 
+    const createDetailsTable = () => {
+      d3.select("#details_table").remove();
+      const tableDiv = document.createElement("div");
+      tableDiv.id = "details_table";
+      document.getElementById("table_container").appendChild(tableDiv);
+
+      clickedDataTable = new Tabulator("#details_table", {
+        autoColumns: true,
+        layout: "fitDataFill",
+        height: 300
+      });
+    };
+
+    // initialization stuff
+    window.onload = function () {
+      // setup hover details table
+      createDetailsTable();  
+
+      // read US Topology file first
+      d3.json(ustopologyFile)
+        .then(USTopology => {
+          
+          mapGeometries = {
+            usShape: topojson.feature(USTopology, USTopology.objects.nation),
+            stateShapes: topojson.feature(USTopology, USTopology.objects.states),
+            statesMesh: topojson.mesh(USTopology, USTopology.objects.states, (a,b) => a !== b),
+            countyShapes: topojson.feature(USTopology, USTopology.objects.counties)
+          };
+
+          // these are the territory FIPS for the US that should be removed
+          // because the projection we use won't show them in the map currently
+          const territoryFIPS = ['60','66','64','69','72','78'];
+          mapGeometries.stateShapes.features = mapGeometries.stateShapes.features.filter(f => !territoryFIPS.includes(f.id));
+          mapGeometries.countyShapes.features = mapGeometries.countyShapes.features.filter(f => !territoryFIPS.includes(f.id.slice(0,2)));
+          // mapGeometries.countyShapes = mapGeometries.countyShapes.features.filter(f => !territoryFIPS.includes(f.id));
+
+          d3.json(cbsaFeatureFile)
+            .then(cbsaFileData => {
+              cbsaFileData.features = cbsaFileData.features.map(f => {
+                f.id = f.properties.ID;
+                f.properties = {name: f.properties.NAME};
+                return turf.rewind(f, { reverse: true} )
+              });
+              mapGeometries.cbsaShapes = cbsaFileData;
+              
+              // get maven app id from url
+              const urlParams = new URLSearchParams(window.location.search);
+              maven_app_mvid = urlParams.get('mvid');
+              setupBroadcastChannel();
+              readVersionInfo();              
+            })
+            .catch(err => {
+              console.error(err);
+            });
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    };
+  </script>
+</body>

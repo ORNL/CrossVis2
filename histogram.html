@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta description="CrossVis: An exploratory visual analytics tool for multivariate data.">
+
+  <link rel="stylesheet" type="text/css" href="./css/crossvis.css">
+  <link rel="stylesheet" type="text/css" href="./js/Semantic-UI/semantic.min.css">
+
+  <title>CrossVis (Histogram View) - Regions Data Visualization</title>
+
+  <style>
+    @font-face {
+      font-family: "KoHo";
+      src: url("./fonts/KoHo/KoHo-Medium.ttf");
+    }
+  </style>
+</head>
+
+<body>
+  <input id="fileInput" type="file" style="display: none;">
+
+  <div class="ui inverted fixed borderless menu">
+    <div class="ui medium header item" style="font-family: 'KoHo', sans-serif; font-size: 1.6rem;">
+      <div class="content">
+        CrossVis
+      </div>
+    </div>
+    <a class="ui item redrawItem">
+      Redraw
+    </a>
+    <div class="right menu">
+      <div class="ui item">
+        <img class="ui image" src="./img/regions-logo-color.png" height="34px">
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 84px 15px 0px;">
+    <div class="ui segment">
+      <div class="ui stackable two column grid">
+        <div class="four wide column">
+          <div class="ui tiny form settingsForm">
+            <h4 class="ui dividing header">Dimensions</h4>
+            <div class="field">
+              <label>Histogram Dimensions</label>
+              <select class="ui search dropdown dimensionsSelect" multiple="" id="dimensionsSelect">
+                <option value="">Choose Dimensions</option>
+              </select>
+            </div>
+            <h4 class="ui dividing header">View Parameters</h4>
+            <div class="inline field">
+              <div class="ui checkbox showPercentSelectedCheck">
+                <input type="checkbox" checked="">
+                <label>Show Percent Selected</label>
+              </div>
+            </div>
+            <div class="field">
+              <label>Histogram Height</label>
+              <input type="range" class="ui fluid range" id="heightRange" min="80" max="400" value="120" style="width: 100%;">
+            </div>
+            <div class="field">
+              <label>Number of Histogram Bins</label>
+              <!-- <div class="ui icon input">
+                <input type="text" placeholder="Enter Preferred Bin Count" name="numBins" id="numBinsInput">
+                <i class="circular check link icon"></i>
+                <!-- <button class="ui button">Apply</button> -->
+              <!-- </div> -->
+              <input placeholder="Enter Preferred Bin Count" name="numBins" type="text" id="numBinsInput">
+            </div>
+          </div>
+        </div>
+        <div class="twelve wide column">
+          <h4 class="ui center aligned header" id="titleHeading"></h4>
+          <div id="charts"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ui divider"></div>
+  <div class="ui basic center aligned footer segment">
+    <span id="mavenVersionNumberText"></span><br/>
+  </div>
+    
+  <script type="text/javascript" src="js/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="js/Semantic-UI/semantic.min.js"></script>
+  <script type="text/javascript" src="js/d3.min.js"></script>
+  <script type="text/javascript" src="js/d3-array.min.js"></script>
+  <script type="text/javascript" src="js/histogramChart.js"></script>
+  <script src="https://unpkg.com/topojson@3"></script>
+
+  <script>
+    const chartMargin = {top: 24, right: 28, bottom: 32, left: 50};
+    const numberFormat = d3.format(",");
+    const percentFormat = d3.format(".0%");
+    const displayOptionsMap = new Map([
+      ['selectedColor', 'steelblue'],
+      ['unselectedColor', '#CCC'],
+      ['showSelected', true],
+      ['showUnselected', true]
+    ]);
+    var histogramCharts = [];
+    var dimensions;
+    var dataMap;
+    var selectedData;
+    const broadcastChannel = new BroadcastChannel("maven_channel");
+    var maven_app_mvid;
+    const hist_mvid = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
+    // const locationProperty = '_mvnloc_';
+
+    const sendMessage = (msg) => {
+      if (maven_app_mvid) {
+        msg.dst = maven_app_mvid;
+        msg.src = hist_mvid;
+        broadcastChannel.postMessage(msg);
+      }
+    };
+
+    const receiveMessage = (event) => {
+      // ignore untrusted events
+      if (!event.isTrusted) return;
+
+      // ignore events not from maven main app, without dst/src, or not sent to this splot window
+      if (!event.data.src || event.data.src !== maven_app_mvid) return;
+      if (event.data.dst) {
+        // if a dst id is given, make sure it the dst id of this splot window
+        // if a dst id is not given, the message is for all listeners and the splot window id won't be checked
+        if (event.data.dst !== hist_mvid) return;
+      }
+
+      if (event.data.type === "hello") {
+        sendMessage({type: 'send data'});
+      } else if (event.data.type === "set data") {
+        if (histogramCharts.length > 0) {
+          histogramCharts.forEach(c => {
+            removeHistogram(c.dimensionName);
+          });
+        }
+        histogramCharts = [];
+        dimensions = event.data.dimensions.filter(d => d.type === "numerical").map(d => d.name).sort(d3.ascending);
+        dataMap = new Map();
+        event.data.tuples.forEach(d => {
+          dataMap.set(d['_id_'], d);
+        });
+        selectedData = null;
+        if (event.data.selected) {
+          selectedData = event.data.selected.map(d => dataMap.get(d));
+        }
+        if (event.data.display_options) {
+          setChartDisplayOptions(event.data.display_options);
+        }
+        initializeUI();
+        // createPlot();
+      } else if (event.data.type === "set selected data") {
+        selectedData = event.data.selected.map(d => dataMap.get(d));
+        if (histogramCharts.length > 0) {
+          histogramCharts.forEach(h => {
+            h.chart.selected(selectedData);
+          });
+        }
+      } else if (event.data.type === "set display options") {
+        setChartDisplayOptions(event.data.display_options);
+      }
+    };
+
+    const updateStatisticValues = () => {
+      // if (chart) {
+      //   // $('#totalDataValue')
+      //   //   .text(`${chartData.length}`);
+      //   // $('#selectedValue')
+      //   //   .text(`${numberFormat(chart.selected().size)} / ${numberFormat(chartData.length)} (${percentFormat(chart.selected().size / (chartData.length))})`);
+      //   // $('#nullsValue')
+      //   //   .text(`${chart.numNull()}`);
+      // } else {
+      //   // $('#selectedStatisticValue')
+      //   //   .text('0 / 0 (0%)');
+      //   // $('#nullStatisticValue')
+      //   //   .text('0');
+      //   // $('#totalDataValue')
+      //   //   .text('0');
+      // }
+    };
+
+    const updateTitle = () => {
+      // let titleStr = `'${getMapValueDimension()}' `;
+      // if (!$('#mapValueModeSelect').parent().hasClass('disabled')) {
+      //   titleStr += `${getMapDisplayMode()} `;
+      // }
+      // titleStr += 'by County';
+
+      // $('#titleHeading').html(titleStr);
+    };
+
+    const setChartDisplayOptions = (options) => {
+      Object.keys(options).forEach(k => {
+        if (displayOptionsMap.has(k)) {
+          displayOptionsMap.set(k, options[k]);
+        }
+      });
+
+      if (histogramCharts) {
+        histogramCharts.forEach(h => {
+          Object.keys(options).forEach(k => {
+            if (k === "selectedOpacity") {
+              h.chart.selectedBinFill(displayOptionsMap.get(k));
+            } else if (k === "unselectedOpacity") {
+              h.chart.contextBinFill(displayOptionsMap.get(k));
+            }
+          });
+        });
+      }
+      // if (chart) {
+      //   Object.keys(options).forEach(k => {
+      //     if (k === "selectedColor") {
+      //       chart.selectedColor(displayOptionsMap.get(k));
+      //     } else if (k === "selectedOpacity") {
+      //       chart.selectedOpacity(displayOptionsMap.get(k));
+      //     } else if (k === "unselectedColor") {
+      //       chart.unselectedColor(displayOptionsMap.get(k));
+      //     } else if (k === "unselectedOpacity") {
+      //       chart.unselectedOpacity(displayOptionsMap.get(k));
+      //     } else if (k === "showSelected") {
+      //       chart.showSelectedDots(displayOptionsMap.get(k));
+      //     } else if (k === "showUnselected") {
+      //       chart.showUnselectedDots(displayOptionsMap.get(k));
+      //     }
+      //   });
+      // }
+    };
+
+    const setupBroadcastChannel = () => {
+      broadcastChannel.addEventListener("message", receiveMessage);
+      sendMessage({type: "hello"});
+    };
+
+    const initializeUI = () => {
+      if (dimensions && dimensions.length > 0) {
+        var dropdownValues = dimensions.map(d => ({
+          name: d, value: d, text: d, selected: false
+        }));
+        $('.dimensionsSelect').dropdown('change values', dropdownValues);
+      } else {
+        $('.dimensionsSelect').dropdown('restore defaults');
+      }
+    };
+    
+    const loadChartData = () => {
+
+    };
+
+    // const createPlot = () => {
+    //   d3.select("#chart").selectAll("*").remove();
+     
+    //   if (!chartData) {
+    //     loadChartData();
+    //   }
+
+    //   if (chartData) {
+    //     const chartWidth = document.getElementById('chart').clientWidth;
+    //     const chartHeight = 200;
+
+    //     // chart = choroplethChart()
+    //     //   .width(chartWidth)
+    //     //   .height(chartHeight)
+    //     //   .margin(chartMargin)
+    //     //   .showNoDataItems(getShowNoDataLocations())
+    //     //   .dataValue(d => d[mapValueDimension])
+    //     //   .fipsValue(d => d[locationProperty])
+    //     //   .colorScale(colorScale);
+    //     // d3.select('#chart').call(chart, chartData, USTopology, selectedData);
+    //   }
+    //   // updateStatisticValues();
+    //   // updateTitle();
+    // };
+
+    const removeHistogram = (dimension) => {
+      const histIdx = histogramCharts.findIndex(d => d.dimensionName === dimension);
+      if (histIdx !== -1) {
+        d3.select(`#${histogramCharts[histIdx].containerID}`).remove();
+        histogramCharts.splice(histIdx, 1);
+      }
+    };
+
+    const createHistogram = (dimension) => {
+      const dimIdx = dimensions.findIndex(d => d === dimension);
+
+      if (dimIdx !== -1) {
+        const chartInfo = {
+          dimensionName: dimension,
+          containerID: `chart_${dimIdx}`,
+          chartID: `hist_${dimIdx}`,
+          rangeSelection: null
+        };
+
+        const containerDiv = document.createElement('div');
+        containerDiv.setAttribute('id', chartInfo.containerID);
+        document.getElementById('charts').prepend(containerDiv);
+
+        const headerDiv = document.createElement('h4');
+        headerDiv.setAttribute('class', 'ui header');
+        headerDiv.innerHTML = dimension;
+        containerDiv.appendChild(headerDiv);
+
+        const chartDiv = document.createElement('div');
+        chartDiv.setAttribute('id', chartInfo.chartID);
+        containerDiv.appendChild(chartDiv);
+
+        const divider = document.createElement('div');
+        divider.setAttribute('class', 'ui divider');
+        containerDiv.appendChild(divider);
+
+        const chartWidth = document.getElementById(chartInfo.chartID).clientWidth;
+        const chartHeight = getHistogramHeight();
+
+        const data = [...dataMap.values()];
+
+        chartInfo.chart = histogramChart()
+          .margin(chartMargin)
+          .width(chartWidth)
+          .height(chartHeight)
+          .xValue(d => d[dimension])
+          .xAxisTitle(dimension)
+          .selected(selectedData)
+          .selectedBinFill(displayOptionsMap.get('selectedColor'))
+          .contextBinFill(displayOptionsMap.get('unselectedColor'))
+          .binThresholds(getNumBins())
+          .showPercentSelected(getShowPercentSelected());
+          // .titleText(dimension);
+        d3.select(`#${chartInfo.chartID}`).call(chartInfo.chart, data);
+        histogramCharts.push(chartInfo);
+      }
+    };
+
+    // get current histogram height setting
+    const getHistogramHeight = () => {
+      return document.getElementById('heightRange').value;
+    };
+
+    // get current number of bin threshold setting
+    const getNumBins = () => {
+      if ($('.settingsForm').form('is valid', 'numBins')) {
+        if ($('#numBinsInput')[0].value.length === 0) {
+          return -1;
+        } else {
+          return +($('#numBinsInput')[0].value);
+        }
+      } else {
+        return null;
+      }
+    };
+
+    // get current setting for showing percent of bin selected
+    const getShowPercentSelected = () => {
+      return $('.showPercentSelectedCheck').checkbox('is checked');
+    };
+
+    // handle changes to histogram height slider
+    document.getElementById('heightRange').addEventListener('change', () => {
+      if (histogramCharts.length > 0) {
+        histogramCharts.forEach(h => {
+          h.chart.height(getHistogramHeight());
+        });
+      }
+    })
+
+    // initialize show percent of bin selected checkbox
+    $('.ui.checkbox.showPercentSelectedCheck').checkbox({
+      onChange: function() {
+        if (histogramCharts.length > 0) {
+          // update all charts for shwo selected Percent setting
+          histogramCharts.forEach(h => {
+            h.chart.showPercentSelected(getShowPercentSelected());
+          });
+        }
+      }
+    });
+
+    // setup dimensions dropdown
+    $('.dimensionsSelect').dropdown({
+      onAdd: function(addedValue, addedText, $addedChoice) {
+        createHistogram(addedValue);
+      },
+      onRemove: function(removedValue, removeText, $removedChoice) {
+        removeHistogram(removedValue);
+      },
+    });
+
+    // get currently shown dimensions
+    const getHistogramDimensions = () => {
+      return histogramCharts.map(d => d.dimensionName);
+      // return $('#dimensionsSelect').dropdown('get value');
+      // return $('.dimensionsSelect').dropdown('get value');
+      // return $('.dimensionsSelect').dropdown('get value');
+    };
+
+    // handle request to redraw chart
+    $('.redrawItem')
+      .on('click', () => {
+        d3.select('#charts').selectAll('*').remove();
+        const dims = getHistogramDimensions();
+        histogramCharts = [];
+        dims.forEach(d => {
+          createHistogram(d);
+        });
+      });
+
+    // setting form intialization
+    $('.ui.form.settingsForm')
+      .form({
+        inline: true,
+        on: blur,
+        fields: {
+          numBins: {
+            optional: true,
+            identifier: 'numBins',
+            rules: [
+              {
+                type: 'integer',
+                prompt: 'Bin number must be a whole number'
+              }
+            ]
+          }
+        }
+      });
+
+    // setup number of bin thresholds input
+    $('#numBinsInput')
+      .on('keypress', function(e) {
+        if (e.keyCode === 13) {
+          $('.settingsForm').form('submit');
+          const numBins = getNumBins();
+          if (numBins !== null) {
+            if (histogramCharts.length > 0) {
+              histogramCharts.forEach(h => {
+                h.chart.binThresholds(numBins);
+              });
+            }
+          }
+        }
+      });
+
+    // handle resizing the window
+    // window.addEventListener("resize", () => {
+    //   createPlot();
+    // });
+
+    // read application version info and display
+    const readVersionInfo = () => {
+      d3.json("data/appinfo.json")
+        .then(d => {
+          $('#mavenVersionNumberText')
+            .text(`${d.name} Ver. ${d.version}`);
+          // $('#mavenVersionDateText')
+          //   .text(`${d3.timeFormat("%Y-%m-%e")(new Date(d.release_date))}`);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    };
+
+    // initialization stuff
+    window.onload = function () {
+      // get maven app id from url
+      const urlParams = new URLSearchParams(window.location.search);
+      maven_app_mvid = urlParams.get('mvid');
+      setupBroadcastChannel();
+      readVersionInfo();
+    };
+  </script>
+</body>
